@@ -15,3 +15,37 @@ const DEFAULT_PLAN = "free"
 export function getPlanLimits(planSlug: string | undefined): PlanLimits {
   return PLAN_LIMITS[planSlug ?? DEFAULT_PLAN] ?? PLAN_LIMITS[DEFAULT_PLAN]
 }
+
+export interface PlanFeature {
+  icon: string
+  label: string
+  value: string
+}
+
+export const PLAN_FEATURES: Record<string, PlanFeature[]> = {
+  free: [
+    { icon: "clock", label: "Data retention", value: "7 days" },
+    { icon: "grid", label: "Dashboards", value: "Unlimited" },
+    { icon: "bell", label: "Alerting", value: "Basic" },
+    { icon: "code", label: "API access", value: "Limited" },
+    { icon: "shield", label: "Support", value: "Community" },
+  ],
+  startup: [
+    { icon: "clock", label: "Data retention", value: "14 days" },
+    { icon: "grid", label: "Dashboards", value: "Unlimited" },
+    { icon: "bell", label: "Alerting", value: "Advanced" },
+    { icon: "code", label: "API access", value: "Full" },
+    { icon: "shield", label: "Support", value: "Email" },
+  ],
+  team: [
+    { icon: "clock", label: "Data retention", value: "30 days" },
+    { icon: "grid", label: "Dashboards", value: "Unlimited" },
+    { icon: "bell", label: "Alerting", value: "Advanced" },
+    { icon: "code", label: "API access", value: "Full" },
+    { icon: "shield", label: "Support", value: "Private Channel" },
+  ],
+}
+
+export function getPlanFeatures(planSlug: string | undefined): PlanFeature[] {
+  return PLAN_FEATURES[planSlug ?? DEFAULT_PLAN] ?? PLAN_FEATURES[DEFAULT_PLAN]
+}

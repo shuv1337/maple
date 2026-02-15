@@ -16,11 +16,12 @@ function limitsFromCustomer(
   features: Record<string, { included_usage?: number | null; balance?: number | null }> | undefined,
 ): PlanLimits | null {
   if (!features) return null
+  const defaults = getPlanLimits("free")
   return {
-    logsGB: features.logs_gb?.included_usage ?? 1,
-    tracesGB: features.traces_gb?.included_usage ?? 1,
-    metricsGB: features.metrics_gb?.included_usage ?? 0.5,
-    retentionDays: features.retention_days?.balance ?? 7,
+    logsGB: features.logs_gb?.included_usage ?? defaults.logsGB,
+    tracesGB: features.traces_gb?.included_usage ?? defaults.tracesGB,
+    metricsGB: features.metrics_gb?.included_usage ?? defaults.metricsGB,
+    retentionDays: features.retention_days?.balance ?? defaults.retentionDays,
   }
 }
 

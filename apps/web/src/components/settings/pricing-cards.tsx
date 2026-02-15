@@ -8,6 +8,7 @@ type Product = NonNullable<
 type ProductItem = Product["items"][number]
 
 import { cn } from "@/lib/utils"
+import { getPlanFeatures } from "@/lib/billing/plans"
 import {
   Card,
   CardContent,
@@ -33,6 +34,7 @@ import {
   FileIcon,
   PulseIcon,
   ChartLineIcon,
+  CircleCheckIcon,
 } from "@/components/icons"
 import type { IconComponent } from "@/components/icons"
 
@@ -40,6 +42,15 @@ const FEATURE_ICONS: Record<string, IconComponent> = {
   logs: FileIcon,
   traces: PulseIcon,
   metrics: ChartLineIcon,
+}
+
+function getProductSlug(product: Product): string {
+  if (product.properties.is_free) return "free"
+  const id = product.id?.toLowerCase()
+  if (id === "free" || id === "startup") return id
+  const name = product.name?.toLowerCase()
+  if (name === "free" || name === "startup") return name
+  return "startup"
 }
 
 function getProductPrice(product: Product): {
@@ -176,12 +187,18 @@ export function PricingCards() {
           <Card key={i}>
             <CardHeader>
               <Skeleton className="h-3 w-16" />
-              <Skeleton className="mt-2 h-6 w-20" />
+              <Skeleton className="mt-2 h-7 w-24" />
               <Skeleton className="mt-1 h-3 w-32" />
             </CardHeader>
             <CardContent className="space-y-3">
+              <Skeleton className="h-3 w-20" />
               {Array.from({ length: 3 }).map((_, j) => (
                 <Skeleton key={j} className="h-4 w-full" />
+              ))}
+              <Skeleton className="mt-2 h-px w-full" />
+              <Skeleton className="h-3 w-24" />
+              {Array.from({ length: 6 }).map((_, j) => (
+                <Skeleton key={`f${j}`} className="h-3.5 w-full" />
               ))}
             </CardContent>
             <CardFooter>
@@ -269,15 +286,21 @@ export function PricingCards() {
       >
         {products.map((product) => {
           const isActive = product.scenario === "active"
+          const isUpgrade =
+            !isActive && product.scenario === "upgrade"
           const { price, interval } = getProductPrice(product)
           const features = getFeatureRows(product)
+          const planFeatures = getPlanFeatures(getProductSlug(product))
           const btn = getButtonConfig(product)
           const trialAvailable = product.free_trial?.trial_available
 
           return (
             <Card
               key={product.id}
-              className={cn(isActive && "ring-primary/40")}
+              className={cn(
+                isActive && "ring-primary/40",
+                isUpgrade && "ring-primary/30 ring-2",
+              )}
             >
               <CardHeader>
                 <div className="flex items-center gap-2">
@@ -290,68 +313,98 @@ export function PricingCards() {
                     </Badge>
                   )}
                   {product.display?.recommend_text && !isActive && (
-                    <Badge variant="outline" className="text-[10px]">
+                    <Badge variant="default" className="text-[10px]">
                       {product.display.recommend_text}
                     </Badge>
                   )}
                 </div>
-                <div className="mt-1 flex items-baseline gap-0.5">
-                  <span className="text-lg font-medium">{price}</span>
+                <div className="mt-2 flex items-baseline gap-1">
+                  <span className="text-2xl font-bold tracking-tight">
+                    {price}
+                  </span>
                   {interval && (
-                    <span className="text-muted-foreground text-xs">
+                    <span className="text-muted-foreground text-xs font-normal">
                       {interval}
                     </span>
                   )}
                 </div>
                 {product.display?.description && (
-                  <CardDescription>
+                  <CardDescription className="mt-1">
                     {product.display.description}
                   </CardDescription>
                 )}
                 {product.display?.everything_from && (
-                  <p className="text-muted-foreground text-xs">
+                  <p className="text-muted-foreground mt-1 text-xs">
                     Everything in {product.display.everything_from}, plus:
                   </p>
                 )}
               </CardHeader>
 
-              {features.length > 0 && (
-                <CardContent>
-                  <Separator className="mb-3" />
-                  <div className="space-y-2">
-                    {features.map((feature) => {
-                      const Icon = FEATURE_ICONS[feature.featureId]
-                      return (
-                        <div
-                          key={feature.featureId}
-                          className="flex items-center justify-between"
-                        >
-                          <div className="text-muted-foreground flex items-center gap-2">
-                            {Icon && <Icon className="size-3.5" />}
-                            <span>{feature.label}</span>
+              <CardContent className="flex flex-col gap-4">
+                {features.length > 0 && (
+                  <div>
+                    <div className="text-muted-foreground mb-2 text-[10px] font-medium uppercase tracking-wider">
+                      Data included
+                    </div>
+                    <div className="space-y-2">
+                      {features.map((feature) => {
+                        const Icon = FEATURE_ICONS[feature.featureId]
+                        return (
+                          <div
+                            key={feature.featureId}
+                            className="flex items-center justify-between"
+                          >
+                            <div className="text-muted-foreground flex items-center gap-2">
+                              {Icon && <Icon className="size-3.5" />}
+                              <span>{feature.label}</span>
+                            </div>
+                            <div className="text-right">
+                              <span className="font-medium tabular-nums">
+                                {feature.value}
+                              </span>
+                              {feature.detail && (
+                                <p className="text-muted-foreground text-[10px]">
+                                  {feature.detail}
+                                </p>
+                              )}
+                            </div>
                           </div>
-                          <div className="text-right">
-                            <span className="tabular-nums">
-                              {feature.value}
-                            </span>
-                            {feature.detail && (
-                              <p className="text-muted-foreground text-[10px]">
-                                {feature.detail}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      )
-                    })}
+                        )
+                      })}
+                    </div>
                   </div>
-                </CardContent>
-              )}
+                )}
+
+                <Separator />
+
+                <div>
+                  <div className="text-muted-foreground mb-2 text-[10px] font-medium uppercase tracking-wider">
+                    Platform features
+                  </div>
+                  <div className="space-y-1.5">
+                    {planFeatures.map((feature) => (
+                      <div
+                        key={feature.label}
+                        className="flex items-center gap-2 text-xs"
+                      >
+                        <CircleCheckIcon className="text-primary size-3.5 shrink-0" />
+                        <span className="text-muted-foreground flex-1">
+                          {feature.label}
+                        </span>
+                        <span className="font-medium tabular-nums">
+                          {feature.value}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
 
               <CardFooter className="mt-auto">
                 <Button
                   variant={btn.variant}
                   disabled={btn.disabled || loadingProductId === product.id}
-                  className="w-full"
+                  className={cn("w-full", isUpgrade && "font-bold")}
                   onClick={() =>
                     handleCheckout(product.id, product.display?.button_url)
                   }
