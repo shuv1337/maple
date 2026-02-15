@@ -1,0 +1,22 @@
+{
+  "name": "@maple/domain",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./http": "./src/http/index.ts",
+    "./query-engine": "./src/query-engine.ts",
+    "./tinybird-pipes": "./src/tinybird-pipes.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@effect/platform": "^0.94.4",
+    "effect": "^3.19.16"
+  },
+  "devDependencies": {
+    "@effect/language-service": "^0.73.0",
+    "typescript": "^5.9.3"
+  }
+}

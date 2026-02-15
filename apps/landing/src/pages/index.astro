@@ -1,0 +1,36 @@
+---
+import Layout from "../layouts/Layout.astro";
+import Nav from "../components/Nav.astro";
+import Hero from "../components/Hero.astro";
+import TrustBar from "../components/TrustBar.astro";
+import ProductTabs from "../components/ProductTabs.astro";
+import FeatureSpotlights from "../components/FeatureSpotlights.astro";
+import WhyOpenTelemetry from "../components/WhyOpenTelemetry.astro";
+import TechnicalDifferentiators from "../components/TechnicalDifferentiators.astro";
+import AIAgentIntegration from "../components/AIAgentIntegration.astro";
+import AlertingIntegrations from "../components/AlertingIntegrations.astro";
+import HowItWorks from "../components/HowItWorks.astro";
+import BottomCTA from "../components/BottomCTA.astro";
+import Footer from "../components/Footer.astro";
+
+const PUBLISHABLE_KEY = import.meta.env.PUBLIC_CLERK_PUBLISHABLE_KEY;
+
+if (!PUBLISHABLE_KEY) {
+    throw new Error("Add your Clerk Publishable Key to the .env file");
+}
+---
+
+<Layout>
+    <Nav />
+    <Hero />
+    <TrustBar />
+    <ProductTabs />
+    <FeatureSpotlights />
+    <WhyOpenTelemetry />
+    <TechnicalDifferentiators />
+    <AIAgentIntegration />
+    <AlertingIntegrations />
+    <HowItWorks />
+    <BottomCTA />
+    <Footer />
+</Layout>

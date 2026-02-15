@@ -1,0 +1,26 @@
+{
+  "name": "maple",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo dev --ui=tui",
+    "build": "turbo build",
+    "typecheck": "turbo typecheck",
+    "test": "turbo test",
+    "deploy:prd": "bun scripts/deploy-stack.ts deploy prd",
+    "destroy:prd": "bun scripts/deploy-stack.ts destroy prd",
+    "deploy:stg": "bun scripts/deploy-stack.ts deploy stg",
+    "destroy:stg": "bun scripts/deploy-stack.ts destroy stg",
+    "deploy:pr": "bun scripts/deploy-stack.ts deploy pr",
+    "destroy:pr": "bun scripts/deploy-stack.ts destroy pr"
+  },
+  "devDependencies": {
+    "@tinybirdco/sdk": "0.0.44",
+    "turbo": "^2.8.9",
+    "typescript": "^5.9.3"
+  },
+  "packageManager": "bun@1.3.8"
+}

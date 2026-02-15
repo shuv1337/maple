@@ -1,0 +1,377 @@
+import { z } from "zod";
+import { getTinybird, type ServiceOverviewOutput, type ServicesFacetsOutput } from "@/lib/tinybird";
+import {
+  buildBucketTimeline,
+  computeBucketSeconds,
+  toIsoBucket,
+} from "@/api/tinybird/timeseries-utils";
+
+// Date format: "YYYY-MM-DD HH:mm:ss" (Tinybird/ClickHouse compatible)
+const dateTimeString = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/, "Invalid datetime format");
+
+// Service overview types
+export interface CommitBreakdown {
+  commitSha: string;
+  spanCount: number;
+  percentage: number;
+}
+
+export interface ServiceOverview {
+  serviceName: string;
+  environment: string;
+  commits: CommitBreakdown[];
+  p50LatencyMs: number;
+  p95LatencyMs: number;
+  p99LatencyMs: number;
+  errorRate: number;
+  throughput: number;
+}
+
+export interface ServiceOverviewResponse {
+  data: ServiceOverview[];
+  error: string | null;
+}
+
+const GetServiceOverviewInput = z.object({
+  startTime: dateTimeString.optional(),
+  endTime: dateTimeString.optional(),
+  environments: z.array(z.string()).optional(),
+  commitShas: z.array(z.string()).optional(),
+});
+
+export type GetServiceOverviewInput = z.infer<typeof GetServiceOverviewInput>;
+
+interface CoercedRow {
+  serviceName: string;
+  environment: string;
+  commitSha: string;
+  spanCount: number;
+  errorCount: number;
+  totalCount: number;
+  p50LatencyMs: number;
+  p95LatencyMs: number;
+  p99LatencyMs: number;
+}
+
+function coerceRow(raw: ServiceOverviewOutput): CoercedRow {
+  return {
+    serviceName: raw.serviceName,
+    environment: raw.environment || "unknown",
+    commitSha: raw.commitSha || "N/A",
+    spanCount: Number(raw.spanCount),
+    errorCount: Number(raw.errorCount),
+    totalCount: Number(raw.throughput),
+    p50LatencyMs: Number(raw.p50LatencyMs),
+    p95LatencyMs: Number(raw.p95LatencyMs),
+    p99LatencyMs: Number(raw.p99LatencyMs),
+  };
+}
+
+function aggregateByServiceEnvironment(
+  rows: CoercedRow[],
+  durationSeconds: number,
+): ServiceOverview[] {
+  const groups = new Map<string, CoercedRow[]>();
+
+  for (const row of rows) {
+    const key = `${row.serviceName}::${row.environment}`;
+    const group = groups.get(key);
+    if (group) {
+      group.push(row);
+    } else {
+      groups.set(key, [row]);
+    }
+  }
+
+  const results: ServiceOverview[] = [];
+
+  for (const group of groups.values()) {
+    const totalSpans = group.reduce((sum, r) => sum + r.spanCount, 0);
+    const totalErrors = group.reduce((sum, r) => sum + r.errorCount, 0);
+    const totalCount = group.reduce((sum, r) => sum + r.totalCount, 0);
+
+    // Weighted average of latencies by span count
+    let p50 = 0;
+    let p95 = 0;
+    let p99 = 0;
+    if (totalSpans > 0) {
+      for (const r of group) {
+        const weight = r.spanCount / totalSpans;
+        p50 += r.p50LatencyMs * weight;
+        p95 += r.p95LatencyMs * weight;
+        p99 += r.p99LatencyMs * weight;
+      }
+    }
+
+    const commits: CommitBreakdown[] = group
+      .map((r) => ({
+        commitSha: r.commitSha,
+        spanCount: r.spanCount,
+        percentage:
+          totalSpans > 0
+            ? Math.round((r.spanCount / totalSpans) * 100)
+            : 0,
+      }))
+      .sort((a, b) => b.percentage - a.percentage);
+
+    results.push({
+      serviceName: group[0].serviceName,
+      environment: group[0].environment,
+      commits,
+      p50LatencyMs: p50,
+      p95LatencyMs: p95,
+      p99LatencyMs: p99,
+      errorRate: totalSpans > 0 ? (totalErrors / totalSpans) * 100 : 0,
+      throughput: durationSeconds > 0 ? totalCount / durationSeconds : 0,
+    });
+  }
+
+  // Sort by throughput descending (same as SQL ORDER BY)
+  results.sort((a, b) => b.throughput - a.throughput);
+  return results;
+}
+
+export async function getServiceOverview({
+  data,
+}: {
+  data: GetServiceOverviewInput
+}): Promise<ServiceOverviewResponse> {
+  data = GetServiceOverviewInput.parse(data ?? {})
+
+  try {
+    const tinybird = getTinybird();
+    const result = await tinybird.query.service_overview({
+      start_time: data.startTime,
+      end_time: data.endTime,
+      environments: data.environments?.join(","),
+      commit_shas: data.commitShas?.join(","),
+    });
+
+    const startMs = data.startTime
+      ? new Date(data.startTime.replace(" ", "T") + "Z").getTime()
+      : 0;
+    const endMs = data.endTime
+      ? new Date(data.endTime.replace(" ", "T") + "Z").getTime()
+      : 0;
+    const durationSeconds =
+      startMs > 0 && endMs > 0
+        ? Math.max((endMs - startMs) / 1000, 1)
+        : 3600; // fallback to 1 hour
+
+    const coercedRows = result.data.map(coerceRow);
+    return {
+      data: aggregateByServiceEnvironment(coercedRows, durationSeconds),
+      error: null,
+    };
+  } catch (error) {
+    console.error("[Tinybird] getServiceOverview failed:", error);
+    return {
+      data: [],
+      error:
+        error instanceof Error
+          ? error.message
+          : "Failed to fetch service overview",
+    };
+  }
+}
+
+// Service overview time series types
+export interface ServiceTimeSeriesPoint {
+  bucket: string;
+  throughput: number;
+  errorRate: number;
+}
+
+export interface ServiceOverviewTimeSeriesResponse {
+  data: Record<string, ServiceTimeSeriesPoint[]>;
+  error: string | null;
+}
+
+function sortByBucket<T extends { bucket: string }>(rows: T[]): T[] {
+  return [...rows].sort((left, right) => left.bucket.localeCompare(right.bucket));
+}
+
+function fillServiceApdexPoints(
+  points: ServiceApdexTimeSeriesPoint[],
+  startTime: string | undefined,
+  endTime: string | undefined,
+  bucketSeconds: number,
+): ServiceApdexTimeSeriesPoint[] {
+  const timeline = buildBucketTimeline(startTime, endTime, bucketSeconds);
+  if (timeline.length === 0) {
+    return sortByBucket(points);
+  }
+
+  const byBucket = new Map<string, ServiceApdexTimeSeriesPoint>();
+  for (const point of points) {
+    byBucket.set(toIsoBucket(point.bucket), point);
+  }
+
+  return timeline.map((bucket) => {
+    const existing = byBucket.get(bucket);
+    if (existing) {
+      return existing;
+    }
+
+    return {
+      bucket,
+      apdexScore: 0,
+      totalCount: 0,
+    };
+  });
+}
+
+// Service facets types
+export interface FacetItem {
+  name: string;
+  count: number;
+}
+
+export interface ServicesFacets {
+  environments: FacetItem[];
+  commitShas: FacetItem[];
+}
+
+export interface ServicesFacetsResponse {
+  data: ServicesFacets;
+  error: string | null;
+}
+
+const GetServicesFacetsInput = z.object({
+  startTime: dateTimeString.optional(),
+  endTime: dateTimeString.optional(),
+});
+
+export type GetServicesFacetsInput = z.infer<typeof GetServicesFacetsInput>;
+
+function transformServicesFacets(facetsData: ServicesFacetsOutput[]): ServicesFacets {
+  const environments: FacetItem[] = [];
+  const commitShas: FacetItem[] = [];
+
+  for (const row of facetsData) {
+    const item = { name: row.name, count: Number(row.count) };
+    switch (row.facetType) {
+      case "environment":
+        environments.push(item);
+        break;
+      case "commitSha":
+        commitShas.push(item);
+        break;
+    }
+  }
+
+  return { environments, commitShas };
+}
+
+export async function getServicesFacets({
+  data,
+}: {
+  data: GetServicesFacetsInput
+}): Promise<ServicesFacetsResponse> {
+  data = GetServicesFacetsInput.parse(data ?? {})
+
+  try {
+    const tinybird = getTinybird();
+    const result = await tinybird.query.services_facets({
+      start_time: data.startTime,
+      end_time: data.endTime,
+    });
+
+    return {
+      data: transformServicesFacets(result.data),
+      error: null,
+    };
+  } catch (error) {
+    console.error("[Tinybird] getServicesFacets failed:", error);
+    return {
+      data: {
+        environments: [],
+        commitShas: [],
+      },
+      error:
+        error instanceof Error
+          ? error.message
+          : "Failed to fetch services facets",
+    };
+  }
+}
+
+// Service detail types
+export interface ServiceDetailTimeSeriesPoint {
+  bucket: string;
+  throughput: number;
+  errorRate: number;
+  p50LatencyMs: number;
+  p95LatencyMs: number;
+  p99LatencyMs: number;
+}
+
+export interface ServiceDetailTimeSeriesResponse {
+  data: ServiceDetailTimeSeriesPoint[];
+  error: string | null;
+}
+
+export interface ServiceApdexTimeSeriesPoint {
+  bucket: string;
+  apdexScore: number;
+  totalCount: number;
+}
+
+export interface ServiceApdexTimeSeriesResponse {
+  data: ServiceApdexTimeSeriesPoint[];
+  error: string | null;
+}
+
+const GetServiceDetailInput = z.object({
+  serviceName: z.string(),
+  startTime: dateTimeString.optional(),
+  endTime: dateTimeString.optional(),
+});
+
+export type GetServiceDetailInput = z.infer<typeof GetServiceDetailInput>;
+
+export async function getServiceApdexTimeSeries({
+  data,
+}: {
+  data: GetServiceDetailInput
+}): Promise<ServiceApdexTimeSeriesResponse> {
+  data = GetServiceDetailInput.parse(data)
+
+  try {
+    const tinybird = getTinybird();
+    const bucketSeconds = computeBucketSeconds(data.startTime, data.endTime);
+    const result = await tinybird.query.service_apdex_time_series({
+      service_name: data.serviceName,
+      start_time: data.startTime,
+      end_time: data.endTime,
+      bucket_seconds: bucketSeconds,
+    });
+
+    const points = result.data.map((row) => ({
+      bucket: toIsoBucket(row.bucket),
+      apdexScore: Number(row.apdexScore),
+      totalCount: Number(row.totalCount),
+    }));
+
+    return {
+      data: fillServiceApdexPoints(
+        points,
+        data.startTime,
+        data.endTime,
+        bucketSeconds,
+      ),
+      error: null,
+    };
+  } catch (error) {
+    console.error("[Tinybird] getServiceApdexTimeSeries failed:", error);
+    return {
+      data: [],
+      error:
+        error instanceof Error
+          ? error.message
+          : "Failed to fetch service apdex time series",
+    };
+  }
+}

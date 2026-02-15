@@ -1,0 +1,190 @@
+---
+
+---
+
+<section id="features" class="py-24 md:py-32 scroll-mt-24">
+    <div class="mx-auto max-w-6xl px-6">
+        <div class="mb-16">
+            <span class="text-[11px] text-accent uppercase tracking-wider">Features</span>
+            <h2 class="mt-3 text-2xl md:text-3xl font-bold text-fg">Everything you need to observe</h2>
+        </div>
+
+        <!-- Feature 1: Distributed Tracing (text left, demo right) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center pb-16 border-b border-border">
+            <div>
+                <span class="text-[11px] text-accent uppercase tracking-wider">Distributed Tracing</span>
+                <h3 class="mt-3 text-xl md:text-2xl font-bold text-fg">Follow every request across services</h3>
+                <p class="mt-3 text-sm text-fg-muted leading-relaxed">
+                    Visualize request flows across services with flamegraph and waterfall views.
+                    Drill into any span to see attributes, events, and timing.
+                </p>
+                <a href="#" class="mt-4 inline-block text-xs text-accent hover:underline underline-offset-2">Learn more &rarr;</a>
+            </div>
+            <div class="border border-border bg-bg-elevated overflow-hidden">
+                <!-- Mini waterfall view -->
+                <div class="flex items-center text-[8px] text-fg-muted border-b border-border bg-muted/30 px-2 py-1">
+                    <span class="w-24 shrink-0">Service</span>
+                    <span class="flex-1">Span</span>
+                    <span class="w-20 text-right">Duration</span>
+                </div>
+                <div class="flex items-center text-[9px] px-2 py-1 border-b border-border">
+                    <span class="w-24 shrink-0"><span class="text-chart-1">api-gateway</span></span>
+                    <span class="flex-1 text-fg-muted font-mono">POST /checkout</span>
+                    <span class="w-20 text-right"><span class="inline-block w-16 h-1.5 bg-chart-1"></span></span>
+                </div>
+                <div class="flex items-center text-[9px] px-2 py-1 border-b border-border">
+                    <span class="w-24 shrink-0 pl-3"><span class="text-chart-2">auth-svc</span></span>
+                    <span class="flex-1 text-fg-muted font-mono">validateToken</span>
+                    <span class="w-20 text-right"><span class="inline-block w-6 h-1.5 bg-chart-2 ml-1"></span></span>
+                </div>
+                <div class="flex items-center text-[9px] px-2 py-1 border-b border-border">
+                    <span class="w-24 shrink-0 pl-3"><span class="text-chart-3">order-svc</span></span>
+                    <span class="flex-1 text-fg-muted font-mono">createOrder</span>
+                    <span class="w-20 text-right"><span class="inline-block w-10 h-1.5 bg-chart-3 ml-2"></span></span>
+                </div>
+                <div class="flex items-center text-[9px] px-2 py-1 border-b border-border">
+                    <span class="w-24 shrink-0 pl-6"><span class="text-chart-4">payment</span></span>
+                    <span class="flex-1 text-fg-muted font-mono">chargeCard</span>
+                    <span class="w-20 text-right"><span class="inline-block w-8 h-1.5 bg-chart-4 ml-4"></span></span>
+                </div>
+                <div class="flex items-center text-[9px] px-2 py-1">
+                    <span class="w-24 shrink-0 pl-6"><span class="text-chart-5">inventory</span></span>
+                    <span class="flex-1 text-fg-muted font-mono">reserveItems</span>
+                    <span class="w-20 text-right"><span class="inline-block w-5 h-1.5 bg-chart-5 ml-5"></span></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Feature 2: Structured Logs (demo left, text right) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center py-16 border-b border-border">
+            <div class="order-2 md:order-1 border border-border bg-bg-elevated overflow-hidden">
+                <!-- Mini log table -->
+                <div class="flex items-center text-[8px] text-fg-muted border-b border-border bg-muted/30 px-2 py-1">
+                    <span class="w-16 shrink-0">Time</span>
+                    <span class="w-16 shrink-0">Service</span>
+                    <span class="w-10 shrink-0">Level</span>
+                    <span class="flex-1">Message</span>
+                </div>
+                <div class="flex items-center text-[9px] px-2 py-1 border-b border-border">
+                    <span class="w-16 shrink-0 text-fg-muted font-mono text-[8px]">14:23:01</span>
+                    <span class="w-16 shrink-0 text-fg-muted font-mono text-[8px]">api-gw</span>
+                    <span class="w-10 shrink-0"><span class="text-[7px] px-1 py-0.5 bg-blue-500/10 text-blue-400">INFO</span></span>
+                    <span class="flex-1 text-fg-muted truncate">POST /checkout 200 203ms</span>
+                </div>
+                <div class="flex items-center text-[9px] px-2 py-1 border-b border-border">
+                    <span class="w-16 shrink-0 text-fg-muted font-mono text-[8px]">14:23:01</span>
+                    <span class="w-16 shrink-0 text-fg-muted font-mono text-[8px]">payment</span>
+                    <span class="w-10 shrink-0"><span class="text-[7px] px-1 py-0.5 bg-yellow-500/10 text-yellow-400">WARN</span></span>
+                    <span class="flex-1 text-fg-muted truncate">Retry 2/3 charge txn_9d1e</span>
+                </div>
+                <div class="flex items-center text-[9px] px-2 py-1 border-b border-border bg-destructive/5">
+                    <span class="w-16 shrink-0 text-fg-muted font-mono text-[8px]">14:22:58</span>
+                    <span class="w-16 shrink-0 text-fg-muted font-mono text-[8px]">payment</span>
+                    <span class="w-10 shrink-0"><span class="text-[7px] px-1 py-0.5 bg-red-500/10 text-red-400">ERROR</span></span>
+                    <span class="flex-1 text-fg-muted truncate">Connection timeout 5000ms</span>
+                </div>
+                <div class="flex items-center text-[9px] px-2 py-1">
+                    <span class="w-16 shrink-0 text-fg-muted font-mono text-[8px]">14:22:57</span>
+                    <span class="w-16 shrink-0 text-fg-muted font-mono text-[8px]">auth</span>
+                    <span class="w-10 shrink-0"><span class="text-[7px] px-1 py-0.5 bg-gray-500/10 text-gray-400">DEBUG</span></span>
+                    <span class="flex-1 text-fg-muted truncate">Token validated usr_2f8a</span>
+                </div>
+            </div>
+            <div class="order-1 md:order-2">
+                <span class="text-[11px] text-accent uppercase tracking-wider">Structured Logs</span>
+                <h3 class="mt-3 text-xl md:text-2xl font-bold text-fg">Search and correlate logs instantly</h3>
+                <p class="mt-3 text-sm text-fg-muted leading-relaxed">
+                    Search and filter logs with full-text search. Correlated with traces for seamless debugging across your stack.
+                </p>
+                <a href="#" class="mt-4 inline-block text-xs text-accent hover:underline underline-offset-2">Learn more &rarr;</a>
+            </div>
+        </div>
+
+        <!-- Feature 3: Metrics & Dashboards (text left, demo right) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center py-16 border-b border-border">
+            <div>
+                <span class="text-[11px] text-accent uppercase tracking-wider">Metrics & Dashboards</span>
+                <h3 class="mt-3 text-xl md:text-2xl font-bold text-fg">Track every signal that matters</h3>
+                <p class="mt-3 text-sm text-fg-muted leading-relaxed">
+                    Track request rates, error rates, and latency percentiles. Build custom charts from any metric your services emit.
+                </p>
+                <a href="#" class="mt-4 inline-block text-xs text-accent hover:underline underline-offset-2">Learn more &rarr;</a>
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+                <!-- Latency chart -->
+                <div class="border border-border bg-bg-elevated p-3">
+                    <div class="text-[8px] text-fg-muted mb-2">Latency (p95)</div>
+                    <div class="flex items-end gap-[2px] h-10">
+                        <div class="flex-1 bg-chart-1/50 h-[40%]"></div><div class="flex-1 bg-chart-1/55 h-[48%]"></div><div class="flex-1 bg-chart-1/60 h-[55%]"></div><div class="flex-1 bg-chart-1/65 h-[62%]"></div><div class="flex-1 bg-chart-1/70 h-[70%]"></div><div class="flex-1 bg-chart-1/75 h-[72%]"></div><div class="flex-1 bg-chart-1 h-[75%]"></div><div class="flex-1 bg-chart-1 h-[68%]"></div>
+                    </div>
+                </div>
+                <!-- Throughput chart -->
+                <div class="border border-border bg-bg-elevated p-3">
+                    <div class="text-[8px] text-fg-muted mb-2">Throughput</div>
+                    <div class="flex items-end gap-[2px] h-10">
+                        <div class="flex-1 bg-chart-3/50 h-[60%]"></div><div class="flex-1 bg-chart-3/55 h-[70%]"></div><div class="flex-1 bg-chart-3/60 h-[58%]"></div><div class="flex-1 bg-chart-3/65 h-[80%]"></div><div class="flex-1 bg-chart-3/70 h-[85%]"></div><div class="flex-1 bg-chart-3/75 h-[82%]"></div><div class="flex-1 bg-chart-3 h-[92%]"></div><div class="flex-1 bg-chart-3 h-[85%]"></div>
+                    </div>
+                </div>
+                <!-- Apdex chart -->
+                <div class="border border-border bg-bg-elevated p-3">
+                    <div class="text-[8px] text-fg-muted mb-2">Apdex</div>
+                    <div class="flex items-end gap-[2px] h-10">
+                        <div class="flex-1 bg-chart-2/60 h-[92%]"></div><div class="flex-1 bg-chart-2/65 h-[90%]"></div><div class="flex-1 bg-chart-2/70 h-[88%]"></div><div class="flex-1 bg-chart-2/70 h-[85%]"></div><div class="flex-1 bg-chart-2/75 h-[82%]"></div><div class="flex-1 bg-chart-2/75 h-[86%]"></div><div class="flex-1 bg-chart-2 h-[90%]"></div><div class="flex-1 bg-chart-2 h-[92%]"></div>
+                    </div>
+                </div>
+                <!-- Error Rate chart -->
+                <div class="border border-border bg-bg-elevated p-3">
+                    <div class="text-[8px] text-fg-muted mb-2">Error Rate</div>
+                    <div class="flex items-end gap-[2px] h-10">
+                        <div class="flex-1 bg-destructive/40 h-[8%]"></div><div class="flex-1 bg-destructive/45 h-[12%]"></div><div class="flex-1 bg-destructive/50 h-[15%]"></div><div class="flex-1 bg-destructive/60 h-[35%]"></div><div class="flex-1 bg-destructive/55 h-[28%]"></div><div class="flex-1 bg-destructive/45 h-[15%]"></div><div class="flex-1 bg-destructive/40 h-[10%]"></div><div class="flex-1 bg-destructive/40 h-[8%]"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Feature 4: Service Overview (demo left, text right) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center pt-16">
+            <div class="order-2 md:order-1 border border-border bg-bg-elevated overflow-hidden">
+                <!-- Mini services table -->
+                <div class="flex items-center text-[8px] text-fg-muted border-b border-border bg-muted/30 px-2 py-1">
+                    <span class="w-24 shrink-0">Service</span>
+                    <span class="w-12 shrink-0">Env</span>
+                    <span class="w-10 shrink-0">P99</span>
+                    <span class="flex-1 text-right">Throughput</span>
+                </div>
+                <div class="flex items-center text-[9px] px-2 py-1.5 border-b border-border">
+                    <span class="w-24 shrink-0 text-accent font-medium">api-gateway</span>
+                    <span class="w-12 shrink-0"><span class="text-[7px] px-1 py-0.5 bg-green-500/10 text-green-400">prod</span></span>
+                    <span class="w-10 shrink-0 text-fg-muted font-mono">120ms</span>
+                    <span class="flex-1 text-right text-fg-muted font-mono">1.2K/s</span>
+                </div>
+                <div class="flex items-center text-[9px] px-2 py-1.5 border-b border-border">
+                    <span class="w-24 shrink-0 text-accent font-medium">order-service</span>
+                    <span class="w-12 shrink-0"><span class="text-[7px] px-1 py-0.5 bg-green-500/10 text-green-400">prod</span></span>
+                    <span class="w-10 shrink-0 text-fg-muted font-mono">234ms</span>
+                    <span class="flex-1 text-right text-fg-muted font-mono">456/s</span>
+                </div>
+                <div class="flex items-center text-[9px] px-2 py-1.5 border-b border-border">
+                    <span class="w-24 shrink-0 text-accent font-medium">payment-svc</span>
+                    <span class="w-12 shrink-0"><span class="text-[7px] px-1 py-0.5 bg-green-500/10 text-green-400">prod</span></span>
+                    <span class="w-10 shrink-0 text-fg-muted font-mono">380ms</span>
+                    <span class="flex-1 text-right text-fg-muted font-mono">234/s</span>
+                </div>
+                <div class="flex items-center text-[9px] px-2 py-1.5">
+                    <span class="w-24 shrink-0 text-accent font-medium">notify-svc</span>
+                    <span class="w-12 shrink-0"><span class="text-[7px] px-1 py-0.5 bg-yellow-500/10 text-yellow-400">stg</span></span>
+                    <span class="w-10 shrink-0 text-fg-muted font-mono">42ms</span>
+                    <span class="flex-1 text-right text-fg-muted font-mono">120/s</span>
+                </div>
+            </div>
+            <div class="order-1 md:order-2">
+                <span class="text-[11px] text-accent uppercase tracking-wider">Service Overview</span>
+                <h3 class="mt-3 text-xl md:text-2xl font-bold text-fg">All your services at a glance</h3>
+                <p class="mt-3 text-sm text-fg-muted leading-relaxed">
+                    See all your services at a glance with latency percentiles, throughput, error rates, and environment badges.
+                </p>
+                <a href="#" class="mt-4 inline-block text-xs text-accent hover:underline underline-offset-2">Learn more &rarr;</a>
+            </div>
+        </div>
+    </div>
+</section>

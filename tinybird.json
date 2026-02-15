@@ -1,0 +1,10 @@
+{
+  "include": [
+    "apps/api/src/tinybird/datasources.ts",
+    "apps/api/src/tinybird/endpoints.ts",
+    "apps/api/src/tinybird/materializations.ts"
+  ],
+  "token": "${TINYBIRD_TOKEN}",
+  "baseUrl": "https://api.tinybird.co",
+  "devMode": "branch"
+}

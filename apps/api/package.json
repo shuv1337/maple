@@ -1,0 +1,41 @@
+{
+  "name": "@maple/api",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "db:migrate": "mkdir -p .data && bun run --cwd ../../packages/db db:migrate",
+    "dev": "bun run --watch src/index.ts",
+    "start": "bun run src/index.ts",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit",
+    "tinybird:dev": "tinybird dev",
+    "tinybird:build": "tinybird build",
+    "tinybird:deploy": "tinybird deploy"
+  },
+  "dependencies": {
+    "@clerk/backend": "^2.30.1",
+    "@effect/ai": "^0.33.2",
+    "@effect/experimental": "^0.58.0",
+    "@effect/platform": "^0.94.4",
+    "@effect/platform-bun": "^0.87.1",
+    "@effect/sql": "^0.49.0",
+    "@effect/sql-drizzle": "^0.48.1",
+    "@effect/sql-libsql": "^0.39.0",
+    "@maple/db": "workspace:*",
+    "@maple/domain": "workspace:*",
+    "@tinybirdco/sdk": "0.0.44",
+    "autumn-js": "^0.1.75",
+    "date-fns": "^4.1.0",
+    "drizzle-orm": "^0.45.1",
+    "effect": "^3.19.16"
+  },
+  "devDependencies": {
+    "@effect/language-service": "^0.73.0",
+    "@types/bun": "^1.3.8",
+    "@types/node": "^22.10.2",
+    "typescript": "^5.9.3"
+  }
+}

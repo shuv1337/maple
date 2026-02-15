@@ -1,0 +1,182 @@
+import { Database } from "bun:sqlite"
+import { afterEach, describe, expect, it } from "bun:test"
+import { mkdtempSync, rmSync } from "node:fs"
+import { join } from "node:path"
+import { tmpdir } from "node:os"
+import type { ConfigError } from "effect/ConfigError"
+import {
+  Cause,
+  ConfigProvider,
+  Effect,
+  Exit,
+  Layer,
+  Option,
+} from "effect"
+import {
+  DashboardDocument,
+  DashboardNotFoundError,
+  DashboardPersistenceError,
+} from "@maple/domain/http"
+import { DashboardPersistenceService } from "./DashboardPersistenceService"
+import { Env } from "./Env"
+
+const createdTempDirs: string[] = []
+
+afterEach(() => {
+  for (const dir of createdTempDirs.splice(0, createdTempDirs.length)) {
+    rmSync(dir, { recursive: true, force: true })
+  }
+})
+
+const getError = <A, E>(exit: Exit.Exit<A, E>): unknown => {
+  if (!Exit.isFailure(exit)) return undefined
+
+  const failure = Option.getOrUndefined(Cause.failureOption(exit.cause))
+  if (failure !== undefined) return failure
+
+  return Option.getOrUndefined(Cause.dieOption(exit.cause))
+}
+
+const createTempDbUrl = () => {
+  const dir = mkdtempSync(join(tmpdir(), "maple-dashboards-"))
+  createdTempDirs.push(dir)
+
+  const dbPath = join(dir, "maple.db")
+  const db = new Database(dbPath)
+  db.close()
+
+  return `file:${dbPath}`
+}
+
+const testConfigProvider = (url: string) =>
+  Layer.setConfigProvider(
+    ConfigProvider.fromMap(
+      new Map([
+        ["PORT", "3472"],
+        ["MCP_PORT", "3473"],
+        ["TINYBIRD_HOST", "https://api.tinybird.co"],
+        ["TINYBIRD_TOKEN", "test-token"],
+        ["MAPLE_DB_URL", url],
+        ["MAPLE_DB_AUTH_TOKEN", ""],
+        ["MAPLE_AUTH_MODE", "self_hosted"],
+        ["MAPLE_ROOT_PASSWORD", "test-root-password"],
+        ["MAPLE_DEFAULT_ORG_ID", "default"],
+        ["MAPLE_INGEST_KEY_ENCRYPTION_KEY", Buffer.alloc(32, 1).toString("base64")],
+        ["MAPLE_INGEST_KEY_LOOKUP_HMAC_KEY", "maple-test-lookup-secret"],
+        ["CLERK_SECRET_KEY", ""],
+        ["CLERK_PUBLISHABLE_KEY", ""],
+        ["CLERK_JWT_KEY", ""],
+      ]),
+    ),
+  )
+
+const makeLayer = (url: string): Layer.Layer<DashboardPersistenceService, ConfigError> =>
+  DashboardPersistenceService.Live.pipe(
+    Layer.provide(Env.Default),
+    Layer.provide(testConfigProvider(url)),
+  )
+
+const makeDashboard = (
+  overrides: Partial<DashboardDocument> = {},
+): DashboardDocument =>
+  new DashboardDocument({
+    id: "dash-1",
+    name: "Dashboard",
+    timeRange: {
+      type: "relative",
+      value: "12h",
+    },
+    widgets: [],
+    createdAt: new Date("2026-01-01T00:00:00.000Z").toISOString(),
+    updatedAt: new Date("2026-01-01T00:00:00.000Z").toISOString(),
+    ...overrides,
+  })
+
+describe("DashboardPersistenceService", () => {
+  it("lists dashboards only for the requested org", async () => {
+    const dbUrl = createTempDbUrl()
+
+    const program = Effect.gen(function* () {
+      yield* DashboardPersistenceService.upsert(
+        "org_a",
+        "user_a",
+        makeDashboard({ id: "a-1", name: "Org A" }),
+      )
+      yield* DashboardPersistenceService.upsert(
+        "org_b",
+        "user_b",
+        makeDashboard({ id: "b-1", name: "Org B" }),
+      )
+      return yield* DashboardPersistenceService.list("org_a")
+    }).pipe(Effect.provide(makeLayer(dbUrl)))
+
+    const dashboards = await Effect.runPromise(program)
+
+    expect(dashboards).toHaveLength(1)
+    expect(dashboards[0].id).toBe("a-1")
+    expect(dashboards[0].name).toBe("Org A")
+  })
+
+  it("upserts by replacing existing dashboard rows for the same org/id", async () => {
+    const dbUrl = createTempDbUrl()
+
+    const original = makeDashboard({
+      id: "dash-1",
+      name: "First Name",
+      updatedAt: new Date("2026-01-01T00:00:00.000Z").toISOString(),
+    })
+
+    const updated = makeDashboard({
+      id: "dash-1",
+      name: "Second Name",
+      updatedAt: new Date("2026-01-01T01:00:00.000Z").toISOString(),
+    })
+
+    const program = Effect.gen(function* () {
+      yield* DashboardPersistenceService.upsert("org_a", "user_a", original)
+      yield* DashboardPersistenceService.upsert("org_a", "user_a", updated)
+      return yield* DashboardPersistenceService.list("org_a")
+    }).pipe(Effect.provide(makeLayer(dbUrl)))
+
+    const dashboards = await Effect.runPromise(program)
+
+    expect(dashboards).toHaveLength(1)
+    expect(dashboards[0].name).toBe("Second Name")
+    expect(dashboards[0].updatedAt).toBe(updated.updatedAt)
+  })
+
+  it("returns DashboardNotFoundError when deleting a missing dashboard", async () => {
+    const dbUrl = createTempDbUrl()
+
+    const program = DashboardPersistenceService.delete(
+      "org_a",
+      "missing",
+    ).pipe(Effect.provide(makeLayer(dbUrl)))
+
+    const exit = await Effect.runPromiseExit(program)
+    const failure = getError(exit)
+
+    expect(Exit.isFailure(exit)).toBe(true)
+    expect(failure).toBeInstanceOf(DashboardNotFoundError)
+  })
+
+  it("maps database/driver errors to DashboardPersistenceError", async () => {
+    const failingLayer = makeLayer("http://127.0.0.1:9")
+
+    const exit = await Effect.runPromiseExit(
+      DashboardPersistenceService.list("org_a").pipe(
+        Effect.provide(failingLayer),
+      ),
+    )
+
+    const failure = getError(exit)
+
+    expect(Exit.isFailure(exit)).toBe(true)
+    if (failure instanceof DashboardPersistenceError) {
+      expect(failure).toBeInstanceOf(DashboardPersistenceError)
+      return
+    }
+
+    expect(String(failure)).toContain("UnknownException")
+  })
+})
