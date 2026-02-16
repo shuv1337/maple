@@ -30,7 +30,15 @@ const landingDomains =
         ]
       : undefined
 
+const landingName =
+  deploymentTarget.kind === "prd"
+    ? "maple-landing"
+    : deploymentTarget.kind === "stg"
+      ? "maple-landing-stg"
+      : `maple-landing-${app.stage}`
+
 export const landing = await Astro("landing", {
+  name: landingName,
   adopt: true,
   domains: landingDomains,
 })
