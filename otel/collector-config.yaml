@@ -25,6 +25,15 @@ exporters:
     endpoint: ${env:TINYBIRD_HOST}
     token: ${env:TINYBIRD_TOKEN}
     timeout: 30s
+    metrics:
+      sum:
+        datasource: metrics_sum
+      gauge:
+        datasource: metrics_gauge
+      histogram:
+        datasource: metrics_histogram
+      exponential_histogram:
+        datasource: metrics_exponential_histogram
     retry_on_failure:
       enabled: true
       initial_interval: 1s
