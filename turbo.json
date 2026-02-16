@@ -26,6 +26,13 @@
     },
     "tinybird:deploy": {
       "cache": false
+    },
+    "deploy:stack": {
+      "dependsOn": ["^build"],
+      "cache": false
+    },
+    "destroy:stack": {
+      "cache": false
     }
   }
 }

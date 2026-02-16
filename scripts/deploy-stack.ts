@@ -43,14 +43,14 @@ function resolveStage(stage: Stage): string {
 const action = parseAction(actionArg)
 const stage = parseStage(stageArg)
 const stageValue = resolveStage(stage)
-const webScript = action === "deploy" ? "deploy:stack" : "destroy:stack"
+const turboTask = action === "deploy" ? "deploy:stack" : "destroy:stack"
 
 if (!process.env.RAILWAY_API_TOKEN?.trim()) {
   fail("RAILWAY_API_TOKEN is required for deploy/destroy (Railway + Cloudflare).")
 }
 
 const proc = Bun.spawn(
-  ["bun", "run", "--cwd", "apps/web", webScript, "--", "--stage", stageValue],
+  ["turbo", turboTask, "--", "--stage", stageValue],
   {
     stdio: ["inherit", "inherit", "inherit"],
     env: process.env,
