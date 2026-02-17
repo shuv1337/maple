@@ -2,6 +2,7 @@ import { useState } from "react"
 import { toast } from "sonner"
 import { CopyIcon, CheckIcon } from "@/components/icons"
 import { cn } from "@/lib/utils"
+import { highlightCode } from "@/lib/sugar-high"
 
 interface CodeBlockProps {
   code: string
@@ -11,6 +12,7 @@ interface CodeBlockProps {
 
 export function CodeBlock({ code, language, className }: CodeBlockProps) {
   const [copied, setCopied] = useState(false)
+  const highlighted = highlightCode(code)
 
   async function handleCopy() {
     try {
@@ -24,17 +26,17 @@ export function CodeBlock({ code, language, className }: CodeBlockProps) {
   }
 
   return (
-    <div className={cn("relative rounded-md bg-muted", className)}>
-      <div className="flex items-center justify-between px-3 py-1.5 border-b border-border/50">
+    <div className={cn("relative overflow-clip rounded-md border border-border bg-muted", className)}>
+      <div className="flex items-center justify-between px-3 py-1.5 text-muted-foreground">
         {language && (
-          <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+          <span className="text-[10px] font-medium uppercase tracking-wider">
             {language}
           </span>
         )}
         <button
           type="button"
           onClick={handleCopy}
-          className="ml-auto flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          className="ml-auto flex items-center gap-1 text-xs hover:text-foreground transition-colors"
         >
           {copied ? (
             <CheckIcon size={14} className="text-emerald-500 animate-in zoom-in-50 duration-200" />
@@ -43,9 +45,11 @@ export function CodeBlock({ code, language, className }: CodeBlockProps) {
           )}
         </button>
       </div>
-      <pre className="overflow-x-auto p-3 text-xs leading-relaxed">
-        <code>{code}</code>
-      </pre>
+      <div className="overflow-x-auto bg-background/50 p-3">
+        <pre className="text-xs leading-relaxed">
+          <code dangerouslySetInnerHTML={{ __html: highlighted }} />
+        </pre>
+      </div>
     </div>
   )
 }
