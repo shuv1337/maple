@@ -13,6 +13,7 @@ import { registerDiagnoseServiceTool } from "./tools/diagnose-service"
 import { registerFindSlowTracesTool } from "./tools/find-slow-traces"
 import { registerErrorDetailTool } from "./tools/error-detail"
 import { registerListMetricsTool } from "./tools/list-metrics"
+import { registerQueryDataTool } from "./tools/query-data"
 import type { McpToolRegistrar, McpToolResult } from "./tools/types"
 
 interface ToolDefinition {
@@ -64,6 +65,7 @@ const collectToolDefinitions = (): ReadonlyArray<ToolDefinition> => {
   registerFindSlowTracesTool(registrar)
   registerErrorDetailTool(registrar)
   registerListMetricsTool(registrar)
+  registerQueryDataTool(registrar)
 
   return definitions
 }

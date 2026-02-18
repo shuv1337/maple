@@ -1,5 +1,5 @@
 import { Result, useAtomValue } from "@effect-atom/atom-react"
-import { Link } from "@tanstack/react-router"
+import { Link, useRouter } from "@tanstack/react-router"
 
 import { useEffectiveTimeRange } from "@/hooks/use-effective-time-range"
 import {
@@ -101,10 +101,18 @@ function LoadingState() {
 }
 
 export function TracesTable({ filters }: TracesTableProps) {
+  const router = useRouter()
   const { startTime: effectiveStartTime, endTime: effectiveEndTime } = useEffectiveTimeRange(
     filters?.startTime,
     filters?.endTime,
   )
+
+  const handleRowClick = (traceId: string) => {
+    void router.navigate({
+      to: "/traces/$traceId",
+      params: { traceId },
+    })
+  }
 
   const tracesResult = useAtomValue(
     listTracesResultAtom({
@@ -158,6 +166,15 @@ export function TracesTable({ filters }: TracesTableProps) {
                   <TableRow
                     key={trace.traceId}
                     className="cursor-pointer"
+                    role="link"
+                    tabIndex={0}
+                    onClick={() => handleRowClick(trace.traceId)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault()
+                        handleRowClick(trace.traceId)
+                      }
+                    }}
                   >
                     <TableCell>
                       <Link
