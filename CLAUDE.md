@@ -100,6 +100,7 @@ TINYBIRD_TOKEN=<token>                # Tinybird API token
 - **Path Alias:** Use `@/` for imports (e.g., `@/components/ui/button`)
 - **TypeScript:** Strict mode enabled with no unused variables
 - **Server Functions:** Always validate inputs with Zod schemas
+- **Effect Schema:** Use Effect Schema instead of Zod for all new schemas (route search params, server function validation). Use `Schema.standardSchemaV1()` to wrap Effect Schemas for TanStack Router's `validateSearch`.
 - **Components:** Add UI components via `npx shadcn@latest add <component>`
 
 ### Nucleo Icons
@@ -126,3 +127,16 @@ Use `/Users/maki/Documents/superwall/app` as the reference implementation for Ef
 ## Data Conventions
 
 - **Span Status Codes:** Use title case (`"Ok"`, `"Error"`, `"Unset"`), not uppercase
+
+## Self-Observability (Trace Loop Prevention)
+
+The Maple API traces itself via `@effect/opentelemetry` → ingest gateway → collector → Tinybird. This creates a feedback loop: viewing traces in the dashboard generates API calls, which create more traces.
+
+**Mitigations already in place:**
+- `HttpMiddleware.withTracerDisabledWhen()` skips `/health` and `OPTIONS` requests
+- OTLP batch export (async, doesn't block requests)
+
+**When modifying tracing code:**
+- NEVER remove the `withTracerDisabledWhen` filter — it prevents noisy health check spans
+- Be careful adding spans to high-frequency internal paths (e.g., auth token validation on every request)
+- The OTLP export itself does NOT go through the API (it goes directly to the ingest gateway), so it won't create recursive traces

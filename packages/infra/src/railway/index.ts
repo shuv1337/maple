@@ -185,6 +185,9 @@ export async function provisionRailwayStack(
       CLERK_JWT_KEY: env.CLERK_JWT_KEY?.trim() || "",
       SD_INTERNAL_TOKEN: env.SD_INTERNAL_TOKEN?.trim() || "",
       AUTUMN_SECRET_KEY: env.AUTUMN_SECRET_KEY?.trim() || "",
+      OTEL_ENVIRONMENT: "production",
+      OTEL_BASE_URL: toIngestPrivateEndpoint(serviceNames.ingest),
+      MAPLE_OTEL_INGEST_KEY: env.MAPLE_OTEL_INGEST_KEY?.trim() || "",
     },
   })
 
@@ -265,6 +268,10 @@ export async function provisionRailwayStack(
 
 function toOtelPrivateEndpoint(serviceName: string): string {
   return `http://${serviceName}.railway.internal:4318`
+}
+
+function toIngestPrivateEndpoint(serviceName: string): string {
+  return `http://${serviceName}.railway.internal:3474`
 }
 
 function toHttpsUrl(domain: string): string {

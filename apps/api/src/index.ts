@@ -1,4 +1,4 @@
-import { HttpApiScalar, HttpLayerRouter, HttpServerResponse } from "@effect/platform"
+import { HttpApiScalar, HttpLayerRouter, HttpMiddleware, HttpServerResponse } from "@effect/platform"
 import { BunHttpServer, BunRuntime } from "@effect/platform-bun"
 import { MapleApi } from "@maple/domain/http"
 import { Config, Effect, Layer, ManagedRuntime } from "effect"
@@ -16,6 +16,7 @@ import { QueryEngineService } from "./services/QueryEngineService"
 import { ScrapeTargetsService } from "./services/ScrapeTargetsService"
 import { TinybirdService } from "./services/TinybirdService"
 import { AuthService } from "./services/AuthService"
+import { TracerLive } from "./services/Telemetry"
 
 const HealthRouter = HttpLayerRouter.use((router) =>
   router.add("GET", "/health", HttpServerResponse.text("OK")),
@@ -77,7 +78,11 @@ Bun.serve({
 })
 
 const app = HttpLayerRouter.serve(AllRoutes).pipe(
+  HttpMiddleware.withTracerDisabledWhen(
+    (request) => request.url === "/health" || request.method === "OPTIONS",
+  ),
   Layer.provideMerge(MainLive),
+  Layer.provide(TracerLive),
   Layer.provide(
     AuthorizationLive.pipe(Layer.provideMerge(Env.Default)),
   ),
