@@ -60,7 +60,7 @@ export const ServiceMapEdge = memo(function ServiceMapEdge({
     targetY,
     sourcePosition,
     targetPosition,
-    borderRadius: 0,
+    borderRadius: 12,
   })
 
   const sourceColor = getServiceLegendColor(source, services)
@@ -88,7 +88,7 @@ export const ServiceMapEdge = memo(function ServiceMapEdge({
   }
 
   const stagger = traversalDuration / particleCount
-  const edgeOffset = simpleHash(id) * stagger
+  const edgeOffset = simpleHash(id) * Math.min(stagger, 1)
   const particleRadius = Math.max(2, sw * 0.6)
 
   // Stable IDs for SVG defs
@@ -198,7 +198,14 @@ export const ServiceMapEdge = memo(function ServiceMapEdge({
           <g
             key={idx}
             filter={`url(#${bloomFilterId})`}
+            visibility="hidden"
           >
+            <set
+              attributeName="visibility"
+              to="visible"
+              begin={`${edgeOffset + idx * stagger}s`}
+              fill="freeze"
+            />
             {/* Comet tail — elongated ellipse oriented along path */}
             <ellipse
               rx={particleRadius * 3}

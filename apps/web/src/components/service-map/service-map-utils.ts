@@ -2,8 +2,9 @@ import {
   forceSimulation,
   forceLink,
   forceManyBody,
-  forceCenter,
   forceCollide,
+  forceX,
+  forceY,
   type SimulationNodeDatum,
   type SimulationLinkDatum,
 } from "d3-force"
@@ -111,7 +112,92 @@ export function buildFlowElements(
 }
 
 /**
- * Run d3-force simulation synchronously to compute node positions
+ * Compute hierarchical layer assignments via BFS on the call graph.
+ * Returns a map from node ID to { layer, indexInLayer, layerSize }.
+ */
+function computeLayers(
+  nodes: Node<ServiceNodeData>[],
+  edges: Edge<ServiceEdgeData>[],
+): Map<string, { layer: number; indexInLayer: number; layerSize: number }> {
+  // Build adjacency list and in-degree map
+  const adjacency = new Map<string, string[]>()
+  const inDegree = new Map<string, number>()
+  for (const n of nodes) {
+    adjacency.set(n.id, [])
+    inDegree.set(n.id, 0)
+  }
+  for (const e of edges) {
+    adjacency.get(e.source)?.push(e.target)
+    inDegree.set(e.target, (inDegree.get(e.target) ?? 0) + 1)
+  }
+
+  // Roots = nodes with in-degree 0, sorted alphabetically for determinism
+  let roots = nodes.filter((n) => (inDegree.get(n.id) ?? 0) === 0).map((n) => n.id).sort()
+
+  // If no roots (pure cycle), pick the node with lowest in-degree
+  if (roots.length === 0) {
+    const sorted = [...nodes].sort((a, b) => {
+      const da = inDegree.get(a.id) ?? 0
+      const db = inDegree.get(b.id) ?? 0
+      return da !== db ? da - db : a.id.localeCompare(b.id)
+    })
+    roots = [sorted[0].id]
+  }
+
+  // BFS from roots
+  const layerMap = new Map<string, number>()
+  const queue: Array<{ id: string; layer: number }> = []
+  for (const root of roots) {
+    layerMap.set(root, 0)
+    queue.push({ id: root, layer: 0 })
+  }
+
+  let head = 0
+  while (head < queue.length) {
+    const { id, layer } = queue[head++]
+    for (const child of adjacency.get(id) ?? []) {
+      if (!layerMap.has(child)) {
+        layerMap.set(child, layer + 1)
+        queue.push({ id: child, layer: layer + 1 })
+      }
+    }
+  }
+
+  // Assign disconnected nodes to maxDepth + 1
+  let maxDepth = 0
+  for (const l of layerMap.values()) {
+    if (l > maxDepth) maxDepth = l
+  }
+  for (const n of nodes) {
+    if (!layerMap.has(n.id)) {
+      layerMap.set(n.id, maxDepth + 1)
+    }
+  }
+
+  // Group nodes by layer and sort alphabetically within each layer
+  const layerGroups = new Map<number, string[]>()
+  for (const [id, layer] of layerMap) {
+    if (!layerGroups.has(layer)) layerGroups.set(layer, [])
+    layerGroups.get(layer)!.push(id)
+  }
+  for (const group of layerGroups.values()) {
+    group.sort()
+  }
+
+  // Build final result
+  const result = new Map<string, { layer: number; indexInLayer: number; layerSize: number }>()
+  for (const [layer, group] of layerGroups) {
+    for (let i = 0; i < group.length; i++) {
+      result.set(group[i], { layer, indexInLayer: i, layerSize: group.length })
+    }
+  }
+
+  return result
+}
+
+/**
+ * Run d3-force simulation synchronously to compute node positions.
+ * Seeds positions from hierarchical BFS layers for a left-to-right layout.
  */
 export function layoutNodes(
   nodes: Node<ServiceNodeData>[],
@@ -119,7 +205,16 @@ export function layoutNodes(
 ): Node<ServiceNodeData>[] {
   if (nodes.length === 0) return nodes
 
-  const simNodes: SimNode[] = nodes.map((n) => ({ id: n.id }))
+  const layers = computeLayers(nodes, edges)
+
+  const simNodes: SimNode[] = nodes.map((n) => {
+    const assignment = layers.get(n.id)!
+    return {
+      id: n.id,
+      x: assignment.layer * 300,
+      y: (assignment.indexInLayer - (assignment.layerSize - 1) / 2) * 120,
+    }
+  })
   const simLinks: SimulationLinkDatum<SimNode>[] = edges.map((e) => ({
     source: e.source,
     target: e.target,
@@ -135,15 +230,31 @@ export function layoutNodes(
       "link",
       forceLink<SimNode, SimulationLinkDatum<SimNode>>(simLinks)
         .id((d) => d.id)
-        .distance(220),
+        .distance(220)
+        .strength(0.3),
     )
-    .force("charge", forceManyBody().strength(-700))
-    .force("center", forceCenter(0, 0))
+    .force("charge", forceManyBody().strength(-400))
+    .force(
+      "x",
+      forceX<SimNode>((d) => {
+        const assignment = layers.get(d.id)
+        return assignment ? assignment.layer * 300 : 0
+      }).strength(0.8),
+    )
+    .force(
+      "y",
+      forceY<SimNode>((d) => {
+        const assignment = layers.get(d.id)
+        return assignment
+          ? (assignment.indexInLayer - (assignment.layerSize - 1) / 2) * 120
+          : 0
+      }).strength(0.3),
+    )
     .force("collide", forceCollide(110))
     .stop()
 
   // Run synchronously
-  for (let i = 0; i < 300; i++) {
+  for (let i = 0; i < 120; i++) {
     simulation.tick()
   }
 

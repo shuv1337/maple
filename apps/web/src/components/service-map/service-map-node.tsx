@@ -41,7 +41,7 @@ export const ServiceMapNode = memo(function ServiceMapNode({
     <>
       <Handle
         type="target"
-        position={Position.Top}
+        position={Position.Left}
         className="!opacity-0 !w-0 !h-0 !min-w-0 !min-h-0"
         isConnectable={false}
       />
@@ -97,7 +97,7 @@ export const ServiceMapNode = memo(function ServiceMapNode({
 
       <Handle
         type="source"
-        position={Position.Bottom}
+        position={Position.Right}
         className="!opacity-0 !w-0 !h-0 !min-w-0 !min-h-0"
         isConnectable={false}
       />
