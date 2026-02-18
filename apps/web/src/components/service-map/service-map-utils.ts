@@ -27,6 +27,7 @@ export interface ServiceEdgeData {
   errorRate: number
   avgDurationMs: number
   p95DurationMs: number
+  services: string[]
   [key: string]: unknown
 }
 
@@ -102,6 +103,7 @@ export function buildFlowElements(
       errorRate: edge.errorRate,
       avgDurationMs: edge.avgDurationMs,
       p95DurationMs: edge.p95DurationMs,
+      services,
     },
   }))
 
@@ -133,11 +135,11 @@ export function layoutNodes(
       "link",
       forceLink<SimNode, SimulationLinkDatum<SimNode>>(simLinks)
         .id((d) => d.id)
-        .distance(250),
+        .distance(220),
     )
-    .force("charge", forceManyBody().strength(-800))
+    .force("charge", forceManyBody().strength(-700))
     .force("center", forceCenter(0, 0))
-    .force("collide", forceCollide(120))
+    .force("collide", forceCollide(110))
     .stop()
 
   // Run synchronously

@@ -111,7 +111,7 @@ function ServiceMapCanvas({
           connectOnClick={false}
           elementsSelectable={false}
           fitView
-          fitViewOptions={{ padding: 0.3, maxZoom: 1.2 }}
+          fitViewOptions={{ padding: 0.15, maxZoom: 1.5 }}
           minZoom={0.1}
           maxZoom={2}
           proOptions={{ hideAttribution: true }}

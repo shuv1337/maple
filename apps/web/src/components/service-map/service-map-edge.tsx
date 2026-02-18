@@ -1,21 +1,21 @@
 import { memo, useId } from "react"
-import { getBezierPath, type EdgeProps } from "@xyflow/react"
+import { getSmoothStepPath, type EdgeProps } from "@xyflow/react"
+import { getServiceLegendColor } from "@/lib/colors"
+import { useReducedMotion } from "@/hooks/use-reduced-motion"
 import type { ServiceEdgeData } from "./service-map-utils"
-
-function getEdgeColor(errorRate: number): string {
-  if (errorRate > 5) return "oklch(0.6 0.2 25)" // red
-  if (errorRate > 1) return "oklch(0.7 0.15 85)" // amber
-  return "oklch(0.6 0.12 160)" // green/teal
-}
 
 function getStrokeWidth(callCount: number): number {
   if (callCount <= 0) return 2
-  // Log scale from 2 to 8px
   return Math.min(8, Math.max(2, 2 + Math.log10(callCount) * 2))
 }
 
-const TRAVERSE_TIME = 2 // seconds, fixed visual crossing speed
-const MAX_DUR = 20 // cap for very low rates (prevents near-invisible motion)
+function getEdgeIntensity(callsPerSecond: number): number {
+  if (callsPerSecond <= 0) return 0.15
+  return Math.min(1, 0.3 + 0.7 * (Math.log10(1 + callsPerSecond) / Math.log10(100)))
+}
+
+const TRAVERSE_TIME = 2
+const MAX_DUR = 20
 const MAX_PARTICLES = 8
 
 function simpleHash(str: string): number {
@@ -34,6 +34,8 @@ function formatCallCount(count: number): string {
 
 export const ServiceMapEdge = memo(function ServiceMapEdge({
   id,
+  source,
+  target,
   sourceX,
   sourceY,
   targetX,
@@ -43,24 +45,30 @@ export const ServiceMapEdge = memo(function ServiceMapEdge({
   data,
 }: EdgeProps) {
   const uniqueId = useId()
+  const reducedMotion = useReducedMotion()
   const edgeData = data as ServiceEdgeData | undefined
 
   const callCount = edgeData?.callCount ?? 0
   const callsPerSecond = edgeData?.callsPerSecond ?? 0
   const errorRate = edgeData?.errorRate ?? 0
+  const services = edgeData?.services ?? []
 
-  const [edgePath, labelX, labelY] = getBezierPath({
+  const [edgePath, labelX, labelY] = getSmoothStepPath({
     sourceX,
     sourceY,
     targetX,
     targetY,
     sourcePosition,
     targetPosition,
+    borderRadius: 0,
   })
 
-  const color = getEdgeColor(errorRate)
-  const strokeWidth = getStrokeWidth(callCount)
-  // Rate-matching: arrival_rate = particleCount / duration ≈ callsPerSecond
+  const sourceColor = getServiceLegendColor(source, services)
+  const targetColor = getServiceLegendColor(target, services)
+  const sw = getStrokeWidth(callCount)
+  const i = getEdgeIntensity(callsPerSecond)
+
+  // Particle calculation
   const rate = Math.max(callsPerSecond, 0)
   let particleCount: number
   let traversalDuration: number
@@ -70,13 +78,10 @@ export const ServiceMapEdge = memo(function ServiceMapEdge({
     traversalDuration = TRAVERSE_TIME
   } else {
     const interArrival = 1 / rate
-
     if (interArrival > TRAVERSE_TIME) {
-      // Low throughput: 1 particle, longer cycle
       particleCount = 1
       traversalDuration = Math.min(interArrival, MAX_DUR)
     } else {
-      // High throughput: multiple particles, fixed cycle
       traversalDuration = TRAVERSE_TIME
       particleCount = Math.min(MAX_PARTICLES, Math.max(1, Math.round(rate * TRAVERSE_TIME)))
     }
@@ -84,41 +89,152 @@ export const ServiceMapEdge = memo(function ServiceMapEdge({
 
   const stagger = traversalDuration / particleCount
   const edgeOffset = simpleHash(id) * stagger
+  const particleRadius = Math.max(2, sw * 0.6)
 
-  const pathId = `path-${id}-${uniqueId}`
+  // Stable IDs for SVG defs
+  const safeId = `${id}-${uniqueId}`.replace(/[^a-zA-Z0-9-_]/g, "_")
+  const pathId = `path-${safeId}`
+  const gradientId = `grad-${safeId}`
+  const ambientFilterId = `ambient-${safeId}`
+  const glassFilterId = `glass-${safeId}`
+  const bloomFilterId = `bloom-${safeId}`
 
   return (
     <>
-      {/* Base path */}
+      <defs>
+        {/* Per-edge gradient from source → target service color */}
+        <linearGradient
+          id={gradientId}
+          gradientUnits="userSpaceOnUse"
+          x1={sourceX}
+          y1={sourceY}
+          x2={targetX}
+          y2={targetY}
+        >
+          <stop offset="0%" stopColor={sourceColor} />
+          <stop offset="100%" stopColor={targetColor} />
+        </linearGradient>
+
+        {/* Ambient glow filter */}
+        <filter id={ambientFilterId} x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="8" />
+        </filter>
+
+        {/* Tube glass inner highlight filter */}
+        <filter id={glassFilterId} x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="0.5" result="glass-blur" />
+          <feMerge>
+            <feMergeNode in="glass-blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+
+        {/* Particle bloom filter — triple merge for light-bleed effect */}
+        <filter id={bloomFilterId} x="-200%" y="-200%" width="500%" height="500%">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="bloom-wide" />
+          <feGaussianBlur in="SourceGraphic" stdDeviation="1.5" result="bloom-tight" />
+          <feMerge>
+            <feMergeNode in="bloom-wide" />
+            <feMergeNode in="bloom-tight" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+
+      {/* Layer 0: Ambient glow — atmospheric halo */}
+      <path
+        d={edgePath}
+        fill="none"
+        stroke={`url(#${gradientId})`}
+        strokeWidth={sw * 3 + 12}
+        strokeOpacity={0.04 + i * 0.08}
+        filter={`url(#${ambientFilterId})`}
+      />
+
+      {/* Layer 1: Tube outer wall — bright rim highlight */}
+      <path
+        d={edgePath}
+        fill="none"
+        stroke={`url(#${gradientId})`}
+        strokeWidth={sw + 4}
+        strokeOpacity={0.12 + i * 0.15}
+      />
+
+      {/* Layer 2: Tube dark core — hollow interior */}
       <path
         id={pathId}
         d={edgePath}
         fill="none"
-        stroke={color}
-        strokeWidth={strokeWidth}
-        strokeOpacity={0.5}
+        stroke="oklch(0.141 0.005 285.823)"
+        strokeWidth={sw}
+        strokeOpacity={0.5 + i * 0.2}
         className="react-flow__edge-path"
       />
 
-      {/* Animated particles */}
-      {Array.from({ length: particleCount }).map((_, i) => (
-        <circle
-          key={i}
-          r={Math.max(2, strokeWidth * 0.6)}
-          fill={color}
-          opacity={0.9}
-        >
-          <animateMotion
-            dur={`${traversalDuration}s`}
-            repeatCount="indefinite"
-            begin={`${edgeOffset + i * stagger}s`}
-          >
-            <mpath href={`#${pathId}`} />
-          </animateMotion>
-        </circle>
-      ))}
+      {/* Layer 3: Inner highlight — glass shine */}
+      <path
+        d={edgePath}
+        fill="none"
+        stroke={`url(#${gradientId})`}
+        strokeWidth={sw * 0.4}
+        strokeOpacity={0.15 + i * 0.25}
+        filter={`url(#${glassFilterId})`}
+      />
 
-      {/* Label */}
+      {/* Layer 4: Energy dashes — flowing energy */}
+      <path
+        d={edgePath}
+        fill="none"
+        stroke={`url(#${gradientId})`}
+        strokeWidth={sw * 0.25}
+        strokeOpacity={0.2 + i * 0.4}
+        strokeDasharray="4 20"
+        className={reducedMotion ? undefined : "service-map-flowing-dash"}
+      />
+
+      {/* Layer 5: Light particles — comet shapes with bloom */}
+      {!reducedMotion &&
+        Array.from({ length: particleCount }).map((_, idx) => (
+          <g
+            key={idx}
+            filter={`url(#${bloomFilterId})`}
+          >
+            {/* Comet tail — elongated ellipse oriented along path */}
+            <ellipse
+              rx={particleRadius * 3}
+              ry={particleRadius * 0.8}
+              fill={sourceColor}
+              opacity={0.3}
+            >
+              <animateMotion
+                dur={`${traversalDuration}s`}
+                repeatCount="indefinite"
+                begin={`${edgeOffset + idx * stagger}s`}
+                rotate="auto"
+              >
+                <mpath href={`#${pathId}`} />
+              </animateMotion>
+            </ellipse>
+
+            {/* Bright core */}
+            <circle
+              r={particleRadius * 0.7}
+              fill="white"
+              opacity={0.9}
+            >
+              <animateMotion
+                dur={`${traversalDuration}s`}
+                repeatCount="indefinite"
+                begin={`${edgeOffset + idx * stagger}s`}
+                rotate="auto"
+              >
+                <mpath href={`#${pathId}`} />
+              </animateMotion>
+            </circle>
+          </g>
+        ))}
+
+      {/* Layer 6: Label */}
       <foreignObject
         x={labelX - 40}
         y={labelY - 12}

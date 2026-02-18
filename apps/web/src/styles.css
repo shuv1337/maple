@@ -224,4 +224,15 @@
     opacity: 1;
     transform: scale(1);
   }
+  .service-map-flowing-dash {
+    animation: none;
+  }
+}
+
+/* Service map flowing dash animation */
+.service-map-flowing-dash {
+  animation: service-map-flow 1.5s linear infinite;
+}
+@keyframes service-map-flow {
+  to { stroke-dashoffset: -24; }
 }
