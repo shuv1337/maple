@@ -69,6 +69,12 @@ function ClerkOrgSwitcher() {
   const orgName = organization?.name ?? "Select Organization"
   const orgImageUrl = organization?.imageUrl
 
+  const switchOrganization = async (nextOrgId: string) => {
+    if (!setActive || organization?.id === nextOrgId) return
+    await setActive({ organization: nextOrgId })
+    window.location.reload()
+  }
+
   const handleCreateOrg = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     if (isCreating || !createOrganization) return
@@ -78,10 +84,8 @@ function ClerkOrgSwitcher() {
 
     try {
       const newOrg = await createOrganization({ name: newOrgName.trim() })
-      await setActive?.({ organization: newOrg.id })
-      await userMemberships?.revalidate()
-      setShowCreateDialog(false)
-      setNewOrgName("")
+      await switchOrganization(newOrg.id)
+      return
     } catch (error) {
       setErrorMessage(
         error instanceof Error ? error.message : "Failed to create organization",
@@ -122,9 +126,7 @@ function ClerkOrgSwitcher() {
             {userMemberships?.data?.map((mem) => (
               <DropdownMenuItem
                 key={mem.organization.id}
-                onClick={() =>
-                  setActive?.({ organization: mem.organization.id })
-                }
+                onClick={() => void switchOrganization(mem.organization.id)}
               >
                 <OrgAvatar
                   name={mem.organization.name}
