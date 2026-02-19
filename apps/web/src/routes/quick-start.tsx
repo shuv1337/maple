@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { createFileRoute, Link } from "@tanstack/react-router"
 import { Result, useAtomValue } from "@effect-atom/atom-react"
+import { useAuth } from "@clerk/clerk-react"
 import { toast } from "sonner"
 import { motion, AnimatePresence } from "motion/react"
 
@@ -577,6 +578,7 @@ const STEPS: {
 ]
 
 function QuickStartPage() {
+  const { orgId } = useAuth()
   const {
     activeStep,
     setActiveStep,
@@ -588,7 +590,33 @@ function QuickStartPage() {
     reset,
     selectedFramework,
     setSelectedFramework,
-  } = useQuickStart()
+  } = useQuickStart(orgId)
+
+  // --- Page-level auto-completion (runs regardless of active step) ---
+  const { customer } = useCustomer()
+  const { startTime, endTime } = useEffectiveTimeRange(undefined, undefined, "1h")
+
+  const overviewResult = useAtomValue(
+    getServiceOverviewResultAtom({
+      data: { startTime, endTime },
+    } as any),
+  )
+
+  // Auto-complete "verify-data" if data already exists
+  useEffect(() => {
+    if (isStepComplete("verify-data")) return
+    if (Result.isSuccess(overviewResult) && overviewResult.value.data.length > 0) {
+      completeStep("verify-data")
+    }
+  }, [overviewResult])
+
+  // Auto-complete "select-plan" if plan already selected
+  useEffect(() => {
+    if (isStepComplete("select-plan")) return
+    if (hasSelectedPlan(customer)) {
+      completeStep("select-plan")
+    }
+  }, [customer])
 
   return (
     <DashboardLayout

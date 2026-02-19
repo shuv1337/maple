@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router"
-import { useUser, useClerk } from "@clerk/clerk-react"
+import { useUser, useClerk, useAuth } from "@clerk/clerk-react"
 import {
   HouseIcon,
   FileIcon,
@@ -248,7 +248,8 @@ function GuestMenu() {
 export function AppSidebar() {
   const routerState = useRouterState()
   const currentPath = routerState.location.pathname
-  const { isDismissed, isComplete, progressPercent } = useQuickStart()
+  const { orgId } = useAuth()
+  const { isDismissed, isComplete, progressPercent } = useQuickStart(orgId)
 
   return (
     <Sidebar collapsible="icon">

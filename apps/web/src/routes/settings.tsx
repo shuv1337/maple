@@ -43,12 +43,13 @@ import { ingestUrl } from "@/lib/services/common/ingest-url"
 import { isClerkAuthEnabled } from "@/lib/services/common/auth-mode"
 import { ApiKeysSection } from "@/components/settings/api-keys-section"
 import { BillingSection } from "@/components/settings/billing-section"
+import { MembersSection } from "@/components/settings/members-section"
 import { ScrapeTargetsSection } from "@/components/settings/scrape-targets-section"
 import { MapleApiAtomClient } from "@/lib/services/common/atom-client"
 
 const SettingsSearch = Schema.Struct({
   tab: Schema.optionalWith(
-    Schema.Literal("ingestion", "api-keys", "connectors", "billing"),
+    Schema.Literal("ingestion", "api-keys", "connectors", "members", "billing"),
     { default: () => "ingestion" as const }
   ),
 })
@@ -393,13 +394,14 @@ function SettingsPage() {
         <Tabs
           value={search.tab}
           onValueChange={(tab) =>
-            navigate({ search: { tab: tab as "ingestion" | "api-keys" | "connectors" | "billing" } })
+            navigate({ search: { tab: tab as "ingestion" | "api-keys" | "connectors" | "members" | "billing" } })
           }
         >
           <TabsList variant="line">
             <TabsTrigger value="ingestion">Ingestion</TabsTrigger>
             <TabsTrigger value="api-keys">API Keys</TabsTrigger>
             <TabsTrigger value="connectors">Connectors</TabsTrigger>
+            <TabsTrigger value="members">Members</TabsTrigger>
             <TabsTrigger value="billing">Usage & Billing</TabsTrigger>
           </TabsList>
           <TabsContent value="ingestion" className="pt-4">
@@ -416,6 +418,9 @@ function SettingsPage() {
               </p>
               <ScrapeTargetsSection />
             </div>
+          </TabsContent>
+          <TabsContent value="members" className="pt-4">
+            <MembersSection />
           </TabsContent>
           <TabsContent value="billing" className="pt-4">
             <BillingSection />

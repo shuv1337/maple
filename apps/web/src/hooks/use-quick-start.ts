@@ -1,128 +1,78 @@
-import { useState, useEffect, useCallback } from "react"
+import { useCallback } from "react"
+import { useAtom } from "@effect-atom/atom-react"
 import type { FrameworkId } from "@/components/quick-start/sdk-snippets"
+import {
+  quickStartAtomFamily,
+  STEP_IDS,
+  type StepId,
+} from "@/atoms/quick-start-atoms"
 
-const STORAGE_KEY = "maple-quick-start"
+export type { StepId }
 
-const STEP_IDS = [
-  "setup-app",
-  "verify-data",
-  "select-plan",
-  "explore",
-] as const
+export function useQuickStart(orgId?: string | null) {
+  const key = orgId ?? "default"
+  const [state, setState] = useAtom(quickStartAtomFamily(key))
 
-export type StepId = (typeof STEP_IDS)[number]
+  const setActiveStep = useCallback(
+    (id: StepId) => {
+      setState((prev) => ({ ...prev, activeStep: id }))
+    },
+    [setState],
+  )
 
-interface QuickStartState {
-  completedSteps: Record<string, boolean>
-  dismissed: boolean
-  selectedFramework: FrameworkId | null
-  activeStep: StepId
-}
+  const completeStep = useCallback(
+    (id: StepId) => {
+      setState((prev) => {
+        // Auto-advance to next step if not complete
+        const currentIndex = STEP_IDS.indexOf(id)
+        const nextStep =
+          currentIndex < STEP_IDS.length - 1
+            ? STEP_IDS[currentIndex + 1]
+            : prev.activeStep
 
-const DEFAULT_STATE: QuickStartState = {
-  completedSteps: {},
-  dismissed: false,
-  selectedFramework: null,
-  activeStep: "setup-app",
-}
+        return {
+          ...prev,
+          completedSteps: { ...prev.completedSteps, [id]: true },
+          activeStep: nextStep,
+        }
+      })
+    },
+    [setState],
+  )
 
-function readState(): QuickStartState {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY)
-    if (stored) {
-      return { ...DEFAULT_STATE, ...JSON.parse(stored) }
-    }
-  } catch {
-    // Ignore localStorage errors
-  }
-  return DEFAULT_STATE
-}
-
-function writeState(state: QuickStartState) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
-  } catch {
-    // Ignore localStorage errors
-  }
-}
-
-export function useQuickStart() {
-  const [state, setState] = useState<QuickStartState>(DEFAULT_STATE)
-
-  useEffect(() => {
-    setState(readState())
-  }, [])
-
-  const setActiveStep = useCallback((id: StepId) => {
-    setState((prev) => {
-      const updated = { ...prev, activeStep: id }
-      writeState(updated)
-      return updated
-    })
-  }, [])
-
-  const completeStep = useCallback((id: StepId) => {
-    setState((prev) => {
-      const updated = {
-        ...prev,
-        completedSteps: { ...prev.completedSteps, [id]: true },
-      }
-      
-      // Auto-advance to next step if not complete
-      const currentIndex = STEP_IDS.indexOf(id)
-      if (currentIndex < STEP_IDS.length - 1) {
-        updated.activeStep = STEP_IDS[currentIndex + 1]
-      }
-      
-      writeState(updated)
-      return updated
-    })
-  }, [])
-
-  const uncompleteStep = useCallback((id: StepId) => {
-    setState((prev) => {
-      const { [id]: _, ...rest } = prev.completedSteps
-      const updated = { ...prev, completedSteps: rest }
-      writeState(updated)
-      return updated
-    })
-  }, [])
+  const uncompleteStep = useCallback(
+    (id: StepId) => {
+      setState((prev) => {
+        const { [id]: _, ...rest } = prev.completedSteps
+        return { ...prev, completedSteps: rest }
+      })
+    },
+    [setState],
+  )
 
   const setSelectedFramework = useCallback(
     (framework: FrameworkId) => {
-      setState((prev) => {
-        const updated = {
-          ...prev,
-          selectedFramework: framework,
-        }
-        writeState(updated)
-        return updated
-      })
+      setState((prev) => ({ ...prev, selectedFramework: framework }))
     },
-    [],
+    [setState],
   )
 
   const dismiss = useCallback(() => {
-    setState((prev) => {
-      const updated = { ...prev, dismissed: true }
-      writeState(updated)
-      return updated
-    })
-  }, [])
+    setState((prev) => ({ ...prev, dismissed: true }))
+  }, [setState])
 
   const undismiss = useCallback(() => {
-    setState((prev) => {
-      const updated = { ...prev, dismissed: false }
-      writeState(updated)
-      return updated
-    })
-  }, [])
+    setState((prev) => ({ ...prev, dismissed: false }))
+  }, [setState])
 
   const reset = useCallback(() => {
-    const updated = { ...DEFAULT_STATE }
-    writeState(updated)
-    setState(updated)
-  }, [])
+    setState({
+      completedSteps: {},
+      dismissed: false,
+      selectedFramework: null,
+      activeStep: "setup-app",
+    })
+  }, [setState])
 
   const isStepComplete = useCallback(
     (id: StepId) => !!state.completedSteps[id],
@@ -138,7 +88,7 @@ export function useQuickStart() {
   const isComplete = completedCount === totalSteps
 
   return {
-    activeStep: state.activeStep,
+    activeStep: state.activeStep as StepId,
     setActiveStep,
     completeStep,
     uncompleteStep,
@@ -151,7 +101,7 @@ export function useQuickStart() {
     progressPercent,
     isDismissed,
     isComplete,
-    selectedFramework: state.selectedFramework,
+    selectedFramework: state.selectedFramework as FrameworkId | null,
     setSelectedFramework,
   }
 }
