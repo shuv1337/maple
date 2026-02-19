@@ -13,6 +13,7 @@ import { Route as SignUpRouteImport } from './routes/sign-up'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ServiceMapRouteImport } from './routes/service-map'
+import { Route as SelectPlanRouteImport } from './routes/select-plan'
 import { Route as QuickStartRouteImport } from './routes/quick-start'
 import { Route as QueryBuilderLabRouteImport } from './routes/query-builder-lab'
 import { Route as OrgRequiredRouteImport } from './routes/org-required'
@@ -44,6 +45,11 @@ const SettingsRoute = SettingsRouteImport.update({
 const ServiceMapRoute = ServiceMapRouteImport.update({
   id: '/service-map',
   path: '/service-map',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SelectPlanRoute = SelectPlanRouteImport.update({
+  id: '/select-plan',
+  path: '/select-plan',
   getParentRoute: () => rootRouteImport,
 } as any)
 const QuickStartRoute = QuickStartRouteImport.update({
@@ -116,6 +122,7 @@ export interface FileRoutesByFullPath {
   '/org-required': typeof OrgRequiredRoute
   '/query-builder-lab': typeof QueryBuilderLabRoute
   '/quick-start': typeof QuickStartRoute
+  '/select-plan': typeof SelectPlanRoute
   '/service-map': typeof ServiceMapRoute
   '/settings': typeof SettingsRoute
   '/sign-in': typeof SignInRoute
@@ -134,6 +141,7 @@ export interface FileRoutesByTo {
   '/org-required': typeof OrgRequiredRoute
   '/query-builder-lab': typeof QueryBuilderLabRoute
   '/quick-start': typeof QuickStartRoute
+  '/select-plan': typeof SelectPlanRoute
   '/service-map': typeof ServiceMapRoute
   '/settings': typeof SettingsRoute
   '/sign-in': typeof SignInRoute
@@ -153,6 +161,7 @@ export interface FileRoutesById {
   '/org-required': typeof OrgRequiredRoute
   '/query-builder-lab': typeof QueryBuilderLabRoute
   '/quick-start': typeof QuickStartRoute
+  '/select-plan': typeof SelectPlanRoute
   '/service-map': typeof ServiceMapRoute
   '/settings': typeof SettingsRoute
   '/sign-in': typeof SignInRoute
@@ -173,6 +182,7 @@ export interface FileRouteTypes {
     | '/org-required'
     | '/query-builder-lab'
     | '/quick-start'
+    | '/select-plan'
     | '/service-map'
     | '/settings'
     | '/sign-in'
@@ -191,6 +201,7 @@ export interface FileRouteTypes {
     | '/org-required'
     | '/query-builder-lab'
     | '/quick-start'
+    | '/select-plan'
     | '/service-map'
     | '/settings'
     | '/sign-in'
@@ -209,6 +220,7 @@ export interface FileRouteTypes {
     | '/org-required'
     | '/query-builder-lab'
     | '/quick-start'
+    | '/select-plan'
     | '/service-map'
     | '/settings'
     | '/sign-in'
@@ -228,6 +240,7 @@ export interface RootRouteChildren {
   OrgRequiredRoute: typeof OrgRequiredRoute
   QueryBuilderLabRoute: typeof QueryBuilderLabRoute
   QuickStartRoute: typeof QuickStartRoute
+  SelectPlanRoute: typeof SelectPlanRoute
   ServiceMapRoute: typeof ServiceMapRoute
   SettingsRoute: typeof SettingsRoute
   SignInRoute: typeof SignInRoute
@@ -266,6 +279,13 @@ declare module '@tanstack/react-router' {
       path: '/service-map'
       fullPath: '/service-map'
       preLoaderRoute: typeof ServiceMapRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/select-plan': {
+      id: '/select-plan'
+      path: '/select-plan'
+      fullPath: '/select-plan'
+      preLoaderRoute: typeof SelectPlanRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/quick-start': {
@@ -364,6 +384,7 @@ const rootRouteChildren: RootRouteChildren = {
   OrgRequiredRoute: OrgRequiredRoute,
   QueryBuilderLabRoute: QueryBuilderLabRoute,
   QuickStartRoute: QuickStartRoute,
+  SelectPlanRoute: SelectPlanRoute,
   ServiceMapRoute: ServiceMapRoute,
   SettingsRoute: SettingsRoute,
   SignInRoute: SignInRoute,

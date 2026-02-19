@@ -1,6 +1,8 @@
 import { useAuth } from "@clerk/clerk-react"
+import { useCustomer } from "autumn-js/react"
 import { Navigate, Outlet, createRootRouteWithContext, redirect, useRouterState } from "@tanstack/react-router"
 import { Toaster } from "@/components/ui/sonner"
+import { hasSelectedPlan } from "@/lib/billing/plan-gating"
 import { isClerkAuthEnabled } from "@/lib/services/common/auth-mode"
 import type { RouterAuthContext } from "@/router"
 
@@ -52,6 +54,10 @@ function ClerkReverseRedirects() {
     }),
   })
   const { isSignedIn, orgId } = useAuth()
+  const { customer, isLoading: isCustomerLoading } = useCustomer()
+
+  const redirectUrl = pathname + (searchStr ?? "")
+  const selectedPlan = hasSelectedPlan(customer)
 
   if (isSignedIn && (pathname === "/sign-in" || pathname === "/sign-up")) {
     return <Navigate to={getRedirectTarget(searchStr)} replace />
@@ -59,6 +65,22 @@ function ClerkReverseRedirects() {
 
   if (isSignedIn && orgId && pathname === "/org-required") {
     return <Navigate to={getRedirectTarget(searchStr)} replace />
+  }
+
+  if (isSignedIn && orgId) {
+    if (isCustomerLoading) {
+      return null
+    }
+
+    const ALLOWED_WITHOUT_PLAN = ["/select-plan", "/quick-start"]
+    
+    if (!selectedPlan && !ALLOWED_WITHOUT_PLAN.includes(pathname)) {
+      return <Navigate to="/select-plan" search={{ redirect_url: redirectUrl }} replace />
+    }
+
+    if (selectedPlan && pathname === "/select-plan") {
+      return <Navigate to={getRedirectTarget(searchStr)} replace />
+    }
   }
 
   return <AppFrame />

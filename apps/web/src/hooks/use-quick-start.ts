@@ -6,6 +6,7 @@ const STORAGE_KEY = "maple-quick-start"
 const STEP_IDS = [
   "setup-app",
   "verify-data",
+  "select-plan",
   "explore",
 ] as const
 
@@ -15,12 +16,14 @@ interface QuickStartState {
   completedSteps: Record<string, boolean>
   dismissed: boolean
   selectedFramework: FrameworkId | null
+  activeStep: StepId
 }
 
 const DEFAULT_STATE: QuickStartState = {
   completedSteps: {},
   dismissed: false,
   selectedFramework: null,
+  activeStep: "setup-app",
 }
 
 function readState(): QuickStartState {
@@ -50,12 +53,27 @@ export function useQuickStart() {
     setState(readState())
   }, [])
 
+  const setActiveStep = useCallback((id: StepId) => {
+    setState((prev) => {
+      const updated = { ...prev, activeStep: id }
+      writeState(updated)
+      return updated
+    })
+  }, [])
+
   const completeStep = useCallback((id: StepId) => {
     setState((prev) => {
       const updated = {
         ...prev,
         completedSteps: { ...prev.completedSteps, [id]: true },
       }
+      
+      // Auto-advance to next step if not complete
+      const currentIndex = STEP_IDS.indexOf(id)
+      if (currentIndex < STEP_IDS.length - 1) {
+        updated.activeStep = STEP_IDS[currentIndex + 1]
+      }
+      
       writeState(updated)
       return updated
     })
@@ -120,6 +138,8 @@ export function useQuickStart() {
   const isComplete = completedCount === totalSteps
 
   return {
+    activeStep: state.activeStep,
+    setActiveStep,
     completeStep,
     uncompleteStep,
     dismiss,
