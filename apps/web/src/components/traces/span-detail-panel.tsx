@@ -286,7 +286,7 @@ export function SpanDetailPanel({ span, onClose }: SpanDetailPanelProps) {
       {/* Header */}
       <div className="flex items-center justify-between border-b px-3 py-2 shrink-0">
         <div className="flex-1 min-w-0 mr-2">
-          <CopyableValue value={span.spanName} className="block">
+          <CopyableValue value={span.spanName} className="block min-w-0 overflow-hidden">
             <h2 className="font-semibold text-sm truncate" title={span.spanName}>
               {span.spanName}
             </h2>

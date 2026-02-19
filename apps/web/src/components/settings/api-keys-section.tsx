@@ -1,5 +1,5 @@
-import { useAtomSet } from "@effect-atom/atom-react"
-import { useCallback, useEffect, useState } from "react"
+import { Result, useAtomRefresh, useAtomSet, useAtomValue } from "@effect-atom/atom-react"
+import { useState } from "react"
 import { Exit } from "effect"
 import { toast } from "sonner"
 
@@ -80,8 +80,6 @@ function formatDate(timestamp: number | null): string {
 }
 
 export function ApiKeysSection() {
-  const [keys, setKeys] = useState<ApiKey[]>([])
-  const [isLoading, setIsLoading] = useState(true)
   const [createOpen, setCreateOpen] = useState(false)
   const [newName, setNewName] = useState("")
   const [newDescription, setNewDescription] = useState("")
@@ -92,33 +90,26 @@ export function ApiKeysSection() {
   const [revokingKeyId, setRevokingKeyId] = useState<string | null>(null)
   const [isRevoking, setIsRevoking] = useState(false)
 
-  const listMutation = useAtomSet(MapleApiAtomClient.mutation("apiKeys", "list"), { mode: "promiseExit" })
+  const listQueryAtom = MapleApiAtomClient.query("apiKeys", "list", {})
+  const listResult = useAtomValue(listQueryAtom)
+  const refreshKeys = useAtomRefresh(listQueryAtom)
+
   const createMutation = useAtomSet(MapleApiAtomClient.mutation("apiKeys", "create"), { mode: "promiseExit" })
   const revokeMutation = useAtomSet(MapleApiAtomClient.mutation("apiKeys", "revoke"), { mode: "promiseExit" })
 
-  const fetchKeys = useCallback(async () => {
-    const result = await listMutation({})
-    if (Exit.isSuccess(result)) {
-      setKeys(
-        result.value.keys.map((k) => ({
-          id: k.id,
-          name: k.name,
-          description: k.description,
-          keyPrefix: k.keyPrefix,
-          revoked: k.revoked,
-          createdAt: k.createdAt,
-          lastUsedAt: k.lastUsedAt,
-        })),
-      )
-    } else {
-      toast.error("Failed to load API keys")
-    }
-    setIsLoading(false)
-  }, [listMutation])
-
-  useEffect(() => {
-    void fetchKeys()
-  }, [fetchKeys])
+  const keys = Result.builder(listResult)
+    .onSuccess((response) =>
+      response.keys.map((k) => ({
+        id: k.id,
+        name: k.name,
+        description: k.description,
+        keyPrefix: k.keyPrefix,
+        revoked: k.revoked,
+        createdAt: k.createdAt,
+        lastUsedAt: k.lastUsedAt,
+      })),
+    )
+    .orElse(() => [])
 
   async function handleCreate() {
     if (!newName.trim()) return
@@ -131,7 +122,7 @@ export function ApiKeysSection() {
     })
     if (Exit.isSuccess(result)) {
       setNewSecret(result.value.secret)
-      await fetchKeys()
+      refreshKeys()
     } else {
       toast.error("Failed to create API key")
     }
@@ -173,7 +164,7 @@ export function ApiKeysSection() {
     const result = await revokeMutation({ path: { keyId: revokingKeyId } })
     if (Exit.isSuccess(result)) {
       toast.success("API key revoked")
-      await fetchKeys()
+      refreshKeys()
     } else {
       toast.error("Failed to revoke API key")
     }
@@ -204,11 +195,13 @@ export function ApiKeysSection() {
           </div>
         </CardHeader>
         <CardContent>
-          {isLoading ? (
+          {Result.isInitial(listResult) ? (
             <div className="space-y-3">
               <Skeleton className="h-10 w-full" />
               <Skeleton className="h-10 w-full" />
             </div>
+          ) : !Result.isSuccess(listResult) ? (
+            <p className="text-sm text-muted-foreground">Failed to load API keys</p>
           ) : keys.length === 0 ? (
             <Empty className="py-8">
               <EmptyHeader>

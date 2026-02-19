@@ -22,35 +22,6 @@ export const traces = feature({
 	consumable: true,
 });
 
-// Plans
-export const free = plan({
-	id: 'free',
-	name: 'Free',
-	auto_enable: true,
-	items: [
-		planFeature({
-			feature_id: 'logs',
-			included: 10,
-			reset: {
-				interval: 'month',
-			},
-		}),
-		planFeature({
-			feature_id: 'metrics',
-			included: 10,
-			reset: {
-				interval: 'month',
-			},
-		}),
-		planFeature({
-			feature_id: 'traces',
-			included: 10,
-			reset: {
-				interval: 'month',
-			},
-		}),
-	],
-});
 
 export const starter = plan({
 	id: 'starter',
@@ -83,7 +54,7 @@ export const starter = plan({
 		}),
 	],
 	free_trial: {
-		duration_length: 30,
+		duration_length: 14,
 		duration_type: 'day',
 		card_required: true,
 	},
@@ -130,43 +101,4 @@ export const startup = plan({
 	],
 });
 
-export const team = plan({
-	id: 'team',
-	name: 'Team',
-	price: {
-		amount: 99,
-		interval: 'month',
-	},
-	items: [
-		planFeature({
-			feature_id: 'logs',
-			included: 200,
-			price: {
-				amount: 0.25,
-				billing_units: 1,
-				billing_method: 'usage_based',
-				interval: 'month',
-			},
-		}),
-		planFeature({
-			feature_id: 'metrics',
-			included: 200,
-			price: {
-				amount: 0.25,
-				billing_units: 1,
-				billing_method: 'usage_based',
-				interval: 'month',
-			},
-		}),
-		planFeature({
-			feature_id: 'traces',
-			included: 200,
-			price: {
-				amount: 0.25,
-				billing_units: 1,
-				billing_method: 'usage_based',
-				interval: 'month',
-			},
-		}),
-	],
-});
+

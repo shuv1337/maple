@@ -1,5 +1,5 @@
-import { useAtomSet } from "@effect-atom/atom-react"
-import { useCallback, useEffect, useState } from "react"
+import { Result, useAtomRefresh, useAtomSet, useAtomValue } from "@effect-atom/atom-react"
+import { useState } from "react"
 import { Exit } from "effect"
 import { toast } from "sonner"
 
@@ -88,8 +88,6 @@ const AUTH_TYPE_LABELS: Record<string, string> = {
 }
 
 export function ScrapeTargetsSection() {
-  const [targets, setTargets] = useState<ScrapeTarget[]>([])
-  const [isLoading, setIsLoading] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
@@ -108,37 +106,24 @@ export function ScrapeTargetsSection() {
   const [formAuthUsername, setFormAuthUsername] = useState("")
   const [formAuthPassword, setFormAuthPassword] = useState("")
 
-  const listMutation = useAtomSet(MapleApiAtomClient.mutation("scrapeTargets", "list"), { mode: "promiseExit" })
+  const listQueryAtom = MapleApiAtomClient.query("scrapeTargets", "list", {})
+  const listResult = useAtomValue(listQueryAtom)
+  const refreshTargets = useAtomRefresh(listQueryAtom)
+
   const createMutation = useAtomSet(MapleApiAtomClient.mutation("scrapeTargets", "create"), { mode: "promiseExit" })
   const updateMutation = useAtomSet(MapleApiAtomClient.mutation("scrapeTargets", "update"), { mode: "promiseExit" })
   const deleteMutation = useAtomSet(MapleApiAtomClient.mutation("scrapeTargets", "delete"), { mode: "promiseExit" })
   const probeMutation = useAtomSet(MapleApiAtomClient.mutation("scrapeTargets", "probe"), { mode: "promiseExit" })
 
-  const loadTargets = useCallback(async () => {
-    const result = await listMutation({})
-    if (Exit.isSuccess(result)) {
-      setTargets([...result.value.targets] as ScrapeTarget[])
-    } else {
-      toast.error("Failed to load scrape targets")
-    }
-    setIsLoading(false)
-  }, [listMutation])
-
-  useEffect(() => {
-    void loadTargets()
-  }, [loadTargets])
+  const targets = Result.builder(listResult)
+    .onSuccess((response) => [...response.targets] as ScrapeTarget[])
+    .orElse(() => [])
 
   async function handleProbe(target: ScrapeTarget) {
     setProbingId(target.id)
     const result = await probeMutation({ path: { targetId: target.id } })
     if (Exit.isSuccess(result)) {
-      setTargets((prev) =>
-        prev.map((t) =>
-          t.id === target.id
-            ? { ...t, lastScrapeAt: result.value.lastScrapeAt, lastScrapeError: result.value.lastScrapeError }
-            : t,
-        ),
-      )
+      refreshTargets()
       if (result.value.success) {
         toast.success("Connection successful")
       } else {
@@ -225,7 +210,7 @@ export function ScrapeTargetsSection() {
       if (Exit.isSuccess(result)) {
         toast.success("Scrape target updated")
         setDialogOpen(false)
-        await loadTargets()
+        refreshTargets()
       } else {
         toast.error("Failed to update scrape target")
       }
@@ -243,7 +228,7 @@ export function ScrapeTargetsSection() {
       if (Exit.isSuccess(result)) {
         toast.success("Scrape target created")
         setDialogOpen(false)
-        await loadTargets()
+        refreshTargets()
       } else {
         toast.error("Failed to create scrape target")
       }
@@ -257,7 +242,7 @@ export function ScrapeTargetsSection() {
     const result = await deleteMutation({ path: { targetId } })
     if (Exit.isSuccess(result)) {
       toast.success("Scrape target deleted")
-      setTargets((prev) => prev.filter((t) => t.id !== targetId))
+      refreshTargets()
     } else {
       toast.error("Failed to delete scrape target")
     }
@@ -271,11 +256,7 @@ export function ScrapeTargetsSection() {
       payload: { enabled: !target.enabled },
     })
     if (Exit.isSuccess(result)) {
-      setTargets((prev) =>
-        prev.map((t) =>
-          t.id === target.id ? { ...t, enabled: !t.enabled } : t,
-        ),
-      )
+      refreshTargets()
     } else {
       toast.error("Failed to update scrape target")
     }
@@ -302,10 +283,14 @@ export function ScrapeTargetsSection() {
         </div>
       </CardHeader>
       <CardContent>
-        {isLoading ? (
+        {Result.isInitial(listResult) ? (
           <div className="text-muted-foreground flex items-center gap-2 py-8 text-sm justify-center">
             <LoaderIcon size={14} className="animate-spin" />
             Loading...
+          </div>
+        ) : !Result.isSuccess(listResult) ? (
+          <div className="text-muted-foreground py-8 text-center text-sm">
+            Failed to load scrape targets.
           </div>
         ) : targets.length === 0 ? (
           <div className="text-muted-foreground py-8 text-center text-sm">

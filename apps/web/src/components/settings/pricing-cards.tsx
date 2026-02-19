@@ -93,6 +93,12 @@ function getFeatureRows(product: Product) {
     }))
 }
 
+const ENTERPRISE_DATA_FEATURES = [
+  { featureId: "logs", label: "Logs", value: "Custom" },
+  { featureId: "traces", label: "Traces", value: "Custom" },
+  { featureId: "metrics", label: "Metrics", value: "Custom" },
+]
+
 function getButtonConfig(product: Product) {
   const { scenario, properties } = product
 
@@ -275,13 +281,20 @@ export function PricingCards() {
     }
   }
 
+  function handleEnterpriseContact() {
+    window.location.href = "mailto:support@maple.dev"
+  }
+
+  const totalCards = products.length + 1
+  const enterprisePlanFeatures = getPlanFeatures("enterprise")
+
   return (
     <>
       <div
         className={cn(
           "grid grid-cols-1 gap-4",
-          products.length === 2 && "sm:grid-cols-2",
-          products.length >= 3 && "sm:grid-cols-3",
+          totalCards === 2 && "sm:grid-cols-2",
+          totalCards >= 3 && "sm:grid-cols-3",
         )}
       >
         {products.map((product) => {
@@ -422,6 +435,79 @@ export function PricingCards() {
             </Card>
           )
         })}
+
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-xs font-medium uppercase tracking-widest">
+                Enterprise
+              </CardTitle>
+            </div>
+            <div className="mt-2 flex items-baseline gap-1">
+              <span className="text-2xl font-bold tracking-tight">Custom</span>
+            </div>
+            <CardDescription className="mt-1">
+              Built for high-volume teams with custom requirements.
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent className="flex flex-col gap-4">
+            <div>
+              <div className="text-muted-foreground mb-2 text-[10px] font-medium uppercase tracking-wider">
+                Data included
+              </div>
+              <div className="space-y-2">
+                {ENTERPRISE_DATA_FEATURES.map((feature) => {
+                  const Icon = FEATURE_ICONS[feature.featureId]
+                  return (
+                    <div
+                      key={feature.featureId}
+                      className="flex items-center justify-between"
+                    >
+                      <div className="text-muted-foreground flex items-center gap-2">
+                        {Icon && <Icon className="size-3.5" />}
+                        <span>{feature.label}</span>
+                      </div>
+                      <span className="font-medium tabular-nums">
+                        {feature.value}
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+
+            <Separator />
+
+            <div>
+              <div className="text-muted-foreground mb-2 text-[10px] font-medium uppercase tracking-wider">
+                Platform features
+              </div>
+              <div className="space-y-1.5">
+                {enterprisePlanFeatures.map((feature) => (
+                  <div
+                    key={feature.label}
+                    className="flex items-center gap-2 text-xs"
+                  >
+                    <CircleCheckIcon className="text-primary size-3.5 shrink-0" />
+                    <span className="text-muted-foreground flex-1">
+                      {feature.label}
+                    </span>
+                    <span className="font-medium tabular-nums">
+                      {feature.value}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+
+          <CardFooter className="mt-auto">
+            <Button variant="outline" className="w-full" onClick={handleEnterpriseContact}>
+              Contact
+            </Button>
+          </CardFooter>
+        </Card>
       </div>
 
       <Dialog

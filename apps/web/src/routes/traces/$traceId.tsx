@@ -1,6 +1,6 @@
-import { useState } from "react"
-import { createFileRoute } from "@tanstack/react-router"
+import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { Result, useAtomValue } from "@effect-atom/atom-react"
+import { Schema } from "effect"
 import { toast } from "sonner"
 
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
@@ -16,15 +16,22 @@ import {
 import { formatDuration } from "@/lib/format"
 import { type Span, type SpanNode } from "@/api/tinybird/traces"
 import { getSpanHierarchyResultAtom } from "@/lib/services/atoms/tinybird-query-atoms"
+import { findSpanById } from "@/components/traces/flow-utils"
+
+const TraceDetailSearchSchema = Schema.Struct({
+  spanId: Schema.optional(Schema.String),
+})
 
 export const Route = createFileRoute("/traces/$traceId")({
   component: TraceDetailPage,
+  validateSearch: Schema.standardSchemaV1(TraceDetailSearchSchema),
 })
 
 function TraceDetailPage() {
   const { traceId } = Route.useParams()
+  const search = Route.useSearch()
+  const navigate = useNavigate({ from: Route.fullPath })
   const result = useAtomValue(getSpanHierarchyResultAtom({ data: { traceId } }))
-  const [selectedSpan, setSelectedSpan] = useState<SpanNode | null>(null)
 
   return Result.builder(result)
     .onInitial(() => (
@@ -75,6 +82,26 @@ function TraceDetailPage() {
       </DashboardLayout>
     ))
     .onSuccess((data) => {
+      const selectedSpan = search.spanId
+        ? findSpanById(data.rootSpans, search.spanId) ?? null
+        : null
+
+      const handleSelectSpan = (span: SpanNode) => {
+        if (search.spanId === span.spanId) return
+        navigate({
+          search: (prev: Record<string, unknown>) => ({ ...prev, spanId: span.spanId }),
+          replace: true,
+        })
+      }
+
+      const handleCloseSpanDetails = () => {
+        if (!search.spanId) return
+        navigate({
+          search: (prev: Record<string, unknown>) => ({ ...prev, spanId: undefined }),
+          replace: true,
+        })
+      }
+
       if (data.spans.length === 0) {
         return (
           <DashboardLayout
@@ -210,7 +237,7 @@ function TraceDetailPage() {
                   services={services}
                   defaultExpandDepth={2}
                   selectedSpanId={selectedSpan?.spanId}
-                  onSelectSpan={setSelectedSpan}
+                  onSelectSpan={handleSelectSpan}
                 />
               </ResizablePanel>
 
@@ -220,7 +247,7 @@ function TraceDetailPage() {
                   <ResizablePanel defaultSize={40} minSize={25}>
                     <SpanDetailPanel
                       span={selectedSpan}
-                      onClose={() => setSelectedSpan(null)}
+                      onClose={handleCloseSpanDetails}
                     />
                   </ResizablePanel>
                 </>

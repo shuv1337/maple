@@ -1,4 +1,4 @@
-import { useAtomSet } from "@effect-atom/atom-react"
+import { Result, useAtomSet, useAtomValue } from "@effect-atom/atom-react"
 import { useCallback, useEffect, useState } from "react"
 import { Exit } from "effect"
 import { MapleApiAtomClient } from "@/lib/services/common/atom-client"
@@ -74,11 +74,11 @@ function ensureDashboard(value: unknown): Dashboard | null {
 
 export function useDashboardStore() {
   const [dashboards, setDashboards] = useState<Dashboard[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const [isHydrated, setIsHydrated] = useState(false)
   const [readOnly, setReadOnly] = useState(false)
   const [persistenceError, setPersistenceError] = useState<string | null>(null)
 
-  const listMutation = useAtomSet(MapleApiAtomClient.mutation("dashboards", "list"), { mode: "promiseExit" })
+  const listResult = useAtomValue(MapleApiAtomClient.query("dashboards", "list", {}))
   const upsertMutation = useAtomSet(MapleApiAtomClient.mutation("dashboards", "upsert"), { mode: "promiseExit" })
   const deleteMutation = useAtomSet(MapleApiAtomClient.mutation("dashboards", "delete"), { mode: "promiseExit" })
 
@@ -138,37 +138,27 @@ export function useDashboardStore() {
   )
 
   useEffect(() => {
-    let cancelled = false
-
-    const loadDashboards = async () => {
-      setIsLoading(true)
-
-      const result = await listMutation({})
-      if (cancelled) return
-
-      if (Exit.isSuccess(result)) {
-        const nextDashboards = result.value.dashboards
-          .map((dashboard) => ensureDashboard(dashboard))
-          .filter((dashboard): dashboard is Dashboard => dashboard !== null)
-
-        setDashboards(nextDashboards)
-        setReadOnly(false)
-        setPersistenceError(null)
-      } else {
-        setPersistenceFailure(result)
-      }
-
-      if (!cancelled) {
-        setIsLoading(false)
-      }
+    if (isHydrated || Result.isInitial(listResult)) {
+      return
     }
 
-    void loadDashboards()
+    if (Result.isSuccess(listResult)) {
+      const nextDashboards = listResult.value.dashboards
+        .map((dashboard) => ensureDashboard(dashboard))
+        .filter((dashboard): dashboard is Dashboard => dashboard !== null)
 
-    return () => {
-      cancelled = true
+      setDashboards(nextDashboards)
+      setReadOnly(false)
+      setPersistenceError(null)
+      setIsHydrated(true)
+      return
     }
-  }, [listMutation, setPersistenceFailure])
+
+    setPersistenceFailure(listResult)
+    setIsHydrated(true)
+  }, [isHydrated, listResult, setPersistenceFailure])
+
+  const isLoading = !isHydrated && Result.isInitial(listResult)
 
   const createDashboard = useCallback(
     (name: string): Dashboard => {
