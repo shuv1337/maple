@@ -13,12 +13,15 @@ const { items } = Astro.props;
 
         <div class="divide-y divide-border border-t border-border">
             {items.map(item => (
-                <details class="group">
+                <details class="faq-item">
                     <summary class="flex items-center justify-between py-5 cursor-pointer text-sm font-medium text-fg select-none">
                         <span>{item.question}</span>
-                        <span class="faq-icon ml-4 shrink-0 text-fg-muted transition-transform duration-200">
-                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <span class="ml-4 shrink-0 text-fg-muted">
+                            <svg class="faq-plus w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M12 5v14M5 12h14" />
+                            </svg>
+                            <svg class="faq-minus w-4 h-4 hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M5 12h14" />
                             </svg>
                         </span>
                     </summary>
@@ -32,9 +35,10 @@ const { items } = Astro.props;
 </section>
 
 <style is:global>
-    @layer utilities {
-        details[open] > summary .faq-icon {
-            rotate: 45deg;
-        }
+    .faq-item[open] .faq-plus {
+        display: none;
+    }
+    .faq-item[open] .faq-minus {
+        display: block;
     }
 </style>
