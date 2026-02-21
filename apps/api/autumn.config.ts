@@ -39,6 +39,7 @@ export const starter = plan({
 			},
 		}),
 		planFeature({
+
 			feature_id: 'metrics',
 			included: 50,
 			reset: {
@@ -54,7 +55,7 @@ export const starter = plan({
 		}),
 	],
 	free_trial: {
-		duration_length: 14,
+		duration_length: 30,
 		duration_type: 'day',
 		card_required: true,
 	},
@@ -64,7 +65,7 @@ export const startup = plan({
 	id: 'startup',
 	name: 'Startup',
 	price: {
-		amount: 29,
+		amount: 39,
 		interval: 'month',
 	},
 	items: [

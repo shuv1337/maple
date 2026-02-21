@@ -6,11 +6,11 @@ export interface PlanLimits {
 }
 
 export const PLAN_LIMITS: Record<string, PlanLimits> = {
-  free: { logsGB: 10, tracesGB: 10, metricsGB: 10, retentionDays: 7 },
+  starter: { logsGB: 10, tracesGB: 10, metricsGB: 10, retentionDays: 7 },
   startup: { logsGB: 40, tracesGB: 40, metricsGB: 40, retentionDays: 30 },
 }
 
-const DEFAULT_PLAN = "free"
+const DEFAULT_PLAN = "starter"
 
 export function getPlanLimits(planSlug: string | undefined): PlanLimits {
   return PLAN_LIMITS[planSlug ?? DEFAULT_PLAN] ?? PLAN_LIMITS[DEFAULT_PLAN]
@@ -48,4 +48,13 @@ export const PLAN_FEATURES: Record<string, PlanFeature[]> = {
 
 export function getPlanFeatures(planSlug: string | undefined): PlanFeature[] {
   return PLAN_FEATURES[planSlug ?? DEFAULT_PLAN] ?? PLAN_FEATURES[DEFAULT_PLAN]
+}
+
+export const PLAN_DESCRIPTIONS: Record<string, string> = {
+  starter: "For individuals and small projects",
+  startup: "For growing teams",
+}
+
+export function getPlanDescription(planSlug: string): string {
+  return PLAN_DESCRIPTIONS[planSlug] ?? PLAN_DESCRIPTIONS["startup"]
 }

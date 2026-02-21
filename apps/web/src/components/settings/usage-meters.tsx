@@ -14,7 +14,7 @@ import {
   type IconComponent,
 } from "@/components/icons"
 import type { AggregatedUsage } from "@/lib/billing/usage"
-import { formatGB, usagePercentage } from "@/lib/billing/usage"
+import { formatUsage, usagePercentage } from "@/lib/billing/usage"
 import type { PlanLimits } from "@/lib/billing/plans"
 import { cn } from "@maple/ui/utils"
 
@@ -28,7 +28,7 @@ interface MeterRowProps {
 function MeterRow({ icon: Icon, label, usedGB, limitGB }: MeterRowProps) {
   const pct = usagePercentage(usedGB, limitGB)
   const isUnlimited = limitGB === Infinity
-  const limitLabel = isUnlimited ? "Unlimited" : formatGB(limitGB)
+  const limitLabel = isUnlimited ? "Unlimited" : formatUsage(limitGB)
 
   return (
     <ProgressPrimitive.Root value={pct} className="flex flex-col gap-2">
@@ -38,7 +38,7 @@ function MeterRow({ icon: Icon, label, usedGB, limitGB }: MeterRowProps) {
           {label}
         </ProgressPrimitive.Label>
         <span className="text-muted-foreground ml-auto text-xs tabular-nums font-mono">
-          {formatGB(usedGB)} / {limitLabel}
+          {formatUsage(usedGB)} / {limitLabel}
         </span>
       </div>
       <ProgressPrimitive.Track className="bg-muted h-1.5 relative flex w-full items-center overflow-x-hidden">

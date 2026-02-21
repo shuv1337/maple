@@ -25,8 +25,8 @@ export function usagePercentage(usedGB: number, limitGB: number): number {
   return (usedGB / limitGB) * 100
 }
 
-export function formatGB(gb: number): string {
+export function formatUsage(gb: number): string {
   if (gb < 0.01) return "0 GB"
-  if (gb < 1) return `${(gb * 1000).toFixed(0)} MB`
+  if (gb < 1) return `${(gb * 1000).toFixed(2)} MB`
   return `${gb.toFixed(2)} GB`
 }

@@ -8,7 +8,7 @@ type Product = NonNullable<
 type ProductItem = Product["items"][number]
 
 import { cn } from "@maple/ui/utils"
-import { getPlanFeatures } from "@/lib/billing/plans"
+import { getPlanFeatures, getPlanDescription } from "@/lib/billing/plans"
 import {
   Card,
   CardContent,
@@ -45,11 +45,11 @@ const FEATURE_ICONS: Record<string, IconComponent> = {
 }
 
 function getProductSlug(product: Product): string {
-  if (product.properties.is_free) return "free"
+  if (product.properties.is_free) return "starter"
   const id = product.id?.toLowerCase()
-  if (id === "free" || id === "startup") return id
+  if (id === "starter" || id === "startup") return id
   const name = product.name?.toLowerCase()
-  if (name === "free" || name === "startup") return name
+  if (name === "starter" || name === "startup") return name
   return "startup"
 }
 
@@ -72,12 +72,14 @@ function getProductPrice(product: Product): {
 
 function formatIncludedUsage(item: ProductItem): string {
   if (item.included_usage === "inf") return "Unlimited"
-  if (item.included_usage != null) return `${item.included_usage} GB`
+  if (item.included_usage != null) {
+    return `${Number(item.included_usage)} GB`
+  }
   return ""
 }
 
 function normalizeDetailText(text: string): string {
-  return text.replace(/\bper\s+(Logs|Traces|Metrics)\b/i, "per GB")
+  return text.replace(/\bper\s+[\d,]+\s+(Logs|Traces|Metrics)\b/i, "per GB")
 }
 
 function getFeatureRows(product: Product) {
@@ -347,11 +349,9 @@ export function PricingCards() {
                     </span>
                   )}
                 </div>
-                {product.display?.description && (
-                  <CardDescription className="mt-3 text-sm leading-relaxed text-muted-foreground">
-                    {product.display.description}
-                  </CardDescription>
-                )}
+                <CardDescription className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                  {product.display?.description ?? getPlanDescription(getProductSlug(product))}
+                </CardDescription>
                 {product.display?.everything_from && (
                   <p className="text-muted-foreground mt-3 text-xs font-medium">
                     Everything in <span className="text-foreground">{product.display.everything_from}</span>, plus:
@@ -439,7 +439,7 @@ export function PricingCards() {
                   ) : (
                     <>
                       {btn.label}
-                      {trialAvailable && !btn.disabled && " — Start free trial"}
+                      {trialAvailable && !btn.disabled && ` — Start ${product.free_trial?.length}-day free trial`}
                     </>
                   )}
                 </Button>
