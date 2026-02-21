@@ -1,6 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { Result, useAtomValue } from "@effect-atom/atom-react"
-import { useRef, useEffect } from "react"
 import { Schema } from "effect"
 
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
@@ -60,10 +59,6 @@ function DashboardPage() {
   const { startTime: effectiveStartTime, endTime: effectiveEndTime } =
     useEffectiveTimeRange(search.startTime, search.endTime, "7d")
 
-  const environmentFilter = search.environment
-    ? [search.environment]
-    : undefined
-
   const handleTimeChange = ({
     startTime,
     endTime,
@@ -105,26 +100,16 @@ function DashboardPage() {
     .onSuccess((response) => response.data.environments)
     .orElse(() => [])
 
-  // Default to production environment on first load
-  const defaultEnvApplied = useRef(false)
-  useEffect(() => {
-    if (
-      !defaultEnvApplied.current &&
-      !search.environment &&
-      environments.length > 0
-    ) {
-      defaultEnvApplied.current = true
-      const hasProduction = environments.some((e) => e.name === "production")
-      if (hasProduction) {
-        navigate({
-          search: (prev: Record<string, unknown>) => ({
-            ...prev,
-            environment: "production",
-          }),
-        })
-      }
-    }
-  }, [environments, search.environment, navigate])
+  // Derive effective environment filter — default to "production" if available, without writing to URL
+  const environmentFilter = (() => {
+    if (search.environment) return [search.environment]
+    const hasProduction = environments.some((e) => e.name === "production")
+    if (hasProduction) return ["production"]
+    return undefined
+  })()
+
+  const selectedEnvironment = search.environment
+    ?? (environments.some((e) => e.name === "production") ? "production" : "__all__")
 
   const overviewResult = useAtomValue(
     getOverviewTimeSeriesResultAtom({
@@ -198,7 +183,7 @@ function DashboardPage() {
       headerActions={
         <div className="flex items-center gap-2">
           <Select
-            value={search.environment ?? "__all__"}
+            value={selectedEnvironment}
             onValueChange={handleEnvironmentChange}
           >
             <SelectTrigger>
