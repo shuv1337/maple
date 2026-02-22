@@ -40,10 +40,11 @@ function AppFrame() {
   )
 }
 
-function getRedirectTarget(searchStr: string): string {
+function getRedirectTarget(searchStr: string, fallback = "/"): string {
   const params = new URLSearchParams(searchStr)
   const target = params.get("redirect_url")
-  return target?.startsWith("/") ? target : "/"
+  if (!target) return fallback
+  return target.startsWith("/") ? target : fallback
 }
 
 function ClerkReverseRedirects() {
@@ -59,8 +60,12 @@ function ClerkReverseRedirects() {
   const redirectUrl = pathname + (searchStr ?? "")
   const selectedPlan = hasSelectedPlan(customer)
 
-  if (isSignedIn && (pathname === "/sign-in" || pathname === "/sign-up")) {
+  if (isSignedIn && pathname === "/sign-in") {
     return <Navigate to={getRedirectTarget(searchStr)} replace />
+  }
+
+  if (isSignedIn && pathname === "/sign-up") {
+    return <Navigate to={getRedirectTarget(searchStr, "/quick-start")} replace />
   }
 
   if (isSignedIn && orgId && pathname === "/org-required") {
@@ -73,7 +78,7 @@ function ClerkReverseRedirects() {
     }
     const ALLOWED_WITHOUT_PLAN = ["/select-plan", "/quick-start"]
     if (!selectedPlan && !ALLOWED_WITHOUT_PLAN.includes(pathname)) {
-      return <Navigate to="/quick-start" search={{ redirect_url: redirectUrl }} replace />
+      return <Navigate to="/select-plan" search={{ redirect_url: redirectUrl }} replace />
     }
     if (selectedPlan && pathname === "/select-plan") {
       return <Navigate to={getRedirectTarget(searchStr)} replace />
