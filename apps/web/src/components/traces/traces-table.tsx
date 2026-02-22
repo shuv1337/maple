@@ -1,5 +1,5 @@
 import { Result, useAtomValue } from "@effect-atom/atom-react"
-import { Link, useRouter } from "@tanstack/react-router"
+import { Link } from "@tanstack/react-router"
 
 import { useEffectiveTimeRange } from "@/hooks/use-effective-time-range"
 import {
@@ -101,18 +101,10 @@ function LoadingState() {
 }
 
 export function TracesTable({ filters }: TracesTableProps) {
-  const router = useRouter()
   const { startTime: effectiveStartTime, endTime: effectiveEndTime } = useEffectiveTimeRange(
     filters?.startTime,
     filters?.endTime,
   )
-
-  const handleRowClick = (traceId: string) => {
-    void router.navigate({
-      to: "/traces/$traceId",
-      params: { traceId },
-    })
-  }
 
   const tracesResult = useAtomValue(
     listTracesResultAtom({
@@ -127,6 +119,8 @@ export function TracesTable({ filters }: TracesTableProps) {
         deploymentEnv: filters?.deploymentEnvs?.[0],
         attributeKey: filters?.attributeKey,
         attributeValue: filters?.attributeValue,
+        resourceAttributeKey: filters?.resourceAttributeKey,
+        resourceAttributeValue: filters?.resourceAttributeValue,
         startTime: effectiveStartTime,
         endTime: effectiveEndTime,
         rootOnly: filters?.rootOnly,
@@ -167,22 +161,13 @@ export function TracesTable({ filters }: TracesTableProps) {
                 response.data.map((trace: Trace) => (
                   <TableRow
                     key={trace.traceId}
-                    className="cursor-pointer"
-                    role="link"
-                    tabIndex={0}
-                    onClick={() => handleRowClick(trace.traceId)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter" || event.key === " ") {
-                        event.preventDefault()
-                        handleRowClick(trace.traceId)
-                      }
-                    }}
+                    className="relative cursor-pointer"
                   >
                     <TableCell>
                       <Link
                         to="/traces/$traceId"
                         params={{ traceId: trace.traceId }}
-                        className="font-mono text-xs text-primary hover:underline"
+                        className="font-mono text-xs text-primary underline decoration-primary/30 underline-offset-2 hover:decoration-primary after:absolute after:inset-0 after:content-['']"
                       >
                         {truncateId(trace.traceId)}
                       </Link>
