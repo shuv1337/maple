@@ -476,9 +476,9 @@ function StepSelectPlan({
   return (
     <div className="space-y-8">
       <div className="space-y-2 text-center max-w-lg mx-auto mb-10">
-        <h2 className="text-2xl font-semibold tracking-tight">Choose your plan</h2>
+        <h2 className="text-2xl font-semibold tracking-tight">Start your free trial</h2>
         <p className="text-muted-foreground text-sm">
-          Select a billing plan to permanently enable your workspace and start exploring your data.
+          Try any paid plan free for 30 days. No charge until the trial ends.
         </p>
       </div>
 
@@ -590,8 +590,8 @@ const STEPS: {
   },
   {
     id: "select-plan",
-    title: "Select your plan",
-    description: "Choose a billing plan to permanently enable your workspace",
+    title: "Start free trial",
+    description: "Try any paid plan free for 30 days",
   },
   {
     id: "explore",

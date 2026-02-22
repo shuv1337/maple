@@ -136,7 +136,14 @@ if (plans.length === 0) {
             {plans.map((plan) => (
                 <div class="border border-border bg-bg-elevated flex flex-col">
                     <div class="p-6 md:p-8 flex flex-col flex-1">
-                        <span class="text-[11px] uppercase tracking-widest text-fg-muted">{plan.name}</span>
+                        <div class="flex items-center gap-2">
+                            <span class="text-[11px] uppercase tracking-widest text-fg-muted">{plan.name}</span>
+                            {plan.hasTrial && (
+                                <span class="inline-flex items-center rounded-full bg-accent/10 px-2 py-0.5 text-[10px] font-medium text-accent">
+                                    30-day trial
+                                </span>
+                            )}
+                        </div>
                         <div class="mt-2 text-4xl font-semibold text-fg">
                             ${plan.price}
                             {plan.interval && <span class="text-base font-normal text-fg-muted">{plan.interval}</span>}
@@ -185,7 +192,7 @@ if (plans.length === 0) {
                             </div>
                         </div>
 
-                        <div class="mt-auto pt-8">
+                        <div class="mt-auto pt-8 space-y-2">
                             {plan.ctaStyle === "accent" ? (
                                 <a href="/waitlist" class="block w-full bg-accent text-accent-foreground px-6 py-2.5 text-sm font-medium text-center hover:opacity-90 transition-opacity">
                                     {plan.ctaLabel}
@@ -194,6 +201,11 @@ if (plans.length === 0) {
                                 <a href="/waitlist" class="block w-full border border-border px-6 py-2.5 text-sm font-medium text-fg text-center hover:opacity-90 transition-opacity">
                                     {plan.ctaLabel}
                                 </a>
+                            )}
+                            {plan.hasTrial && (
+                                <p class="text-[11px] text-fg-muted text-center">
+                                    You won't be charged for 30 days · Credit card required
+                                </p>
                             )}
                         </div>
                     </div>

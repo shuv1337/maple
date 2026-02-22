@@ -63,13 +63,13 @@ function SelectPlanPage() {
         <div className="text-center flex flex-col items-center">
           <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-[11px] font-medium tracking-wider text-primary uppercase mb-6">
             <RocketIcon size={14} />
-            Getting Started
+            30-day free trial
           </div>
           <h1 className="text-3xl md:text-4xl font-semibold tracking-tight text-foreground [text-wrap:balance]">
-            Choose a plan to launch Maple
+            Start your free trial
           </h1>
           <p className="text-muted-foreground mt-4 text-sm md:text-base leading-relaxed max-w-lg mx-auto [text-wrap:balance]">
-            Start exploring your telemetry today. Upgrade, downgrade, or cancel anytime from your workspace settings.
+            Try any paid plan free for 30 days. You won't be charged until the trial ends. Cancel anytime.
           </p>
         </div>
 

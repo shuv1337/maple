@@ -7,12 +7,16 @@ function isLegacyFreeProduct(product: Customer["products"][number]): boolean {
   return product.name?.toLowerCase() === "free"
 }
 
-export function hasSelectedPlan(customer: Customer | null | undefined): boolean {
-  if (!customer) return false
+export function getActivePlan(customer: Customer | null | undefined): Customer["products"][number] | null {
+  if (!customer) return null
 
-  return customer.products.some((product) => {
+  return customer.products.find((product) => {
     if (product.is_add_on || product.is_default) return false
     if (isLegacyFreeProduct(product)) return false
     return ALLOWED_PRODUCT_STATUSES.has(product.status)
-  })
+  }) ?? null
+}
+
+export function hasSelectedPlan(customer: Customer | null | undefined): boolean {
+  return getActivePlan(customer) !== null
 }

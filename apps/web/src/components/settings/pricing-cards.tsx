@@ -9,6 +9,7 @@ type ProductItem = Product["items"][number]
 
 import { cn } from "@maple/ui/utils"
 import { getPlanFeatures, getPlanDescription } from "@/lib/billing/plans"
+import { useTrialStatus } from "@/hooks/use-trial-status"
 import {
   Card,
   CardContent,
@@ -178,6 +179,7 @@ interface CheckoutPreview {
 export function PricingCards() {
   const { products, isLoading, error } = usePricingTable()
   const { checkout, attach, refetch } = useCustomer()
+  const { isTrialing, daysRemaining } = useTrialStatus()
   const [loadingProductId, setLoadingProductId] = useState<string | null>(null)
   const [confirmDialog, setConfirmDialog] = useState<CheckoutPreview | null>(
     null,
@@ -318,6 +320,11 @@ export function PricingCards() {
               {isUpgrade && (
                 <div className="absolute inset-x-0 -top-px h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
               )}
+              {trialAvailable && !isActive && (
+                <div className="mx-6 mt-6 -mb-2 rounded-md bg-primary/10 px-3 py-1.5 text-center text-xs font-medium text-primary">
+                  30-day free trial included
+                </div>
+              )}
               <CardHeader className="pt-6">
                 <div className="flex items-center justify-between">
                   <CardTitle className={cn(
@@ -327,11 +334,15 @@ export function PricingCards() {
                     {product.display?.name ?? product.name}
                   </CardTitle>
                   <div className="flex gap-2">
-                    {isActive && (
+                    {isActive && isTrialing && daysRemaining != null ? (
+                      <Badge variant="secondary" className="text-[10px] font-medium bg-secondary/50">
+                        Trial · {daysRemaining}d left
+                      </Badge>
+                    ) : isActive ? (
                       <Badge variant="secondary" className="text-[10px] font-medium bg-secondary/50">
                         Current
                       </Badge>
-                    )}
+                    ) : null}
                     {product.display?.recommend_text && !isActive && (
                       <Badge variant="default" className="text-[10px] font-medium shadow-sm">
                         {product.display.recommend_text}
@@ -421,9 +432,9 @@ export function PricingCards() {
                 </div>
               </CardContent>
 
-              <CardFooter className="mt-auto pt-4 pb-6 px-6">
+              <CardFooter className="mt-auto pt-4 pb-6 px-6 flex-col gap-2">
                 <Button
-                  variant={btn.variant}
+                  variant={trialAvailable && !btn.disabled ? "default" : btn.variant}
                   disabled={btn.disabled || loadingProductId === product.id}
                   className={cn(
                     "w-full h-10 transition-all",
@@ -436,13 +447,19 @@ export function PricingCards() {
                 >
                   {loadingProductId === product.id ? (
                     <Spinner className="size-4" />
+                  ) : trialAvailable && !btn.disabled ? (
+                    `Start ${product.free_trial?.length}-day free trial`
+                  ) : isActive && isTrialing ? (
+                    "Trialing"
                   ) : (
-                    <>
-                      {btn.label}
-                      {trialAvailable && !btn.disabled && ` — Start ${product.free_trial?.length}-day free trial`}
-                    </>
+                    btn.label
                   )}
                 </Button>
+                {trialAvailable && !btn.disabled && (
+                  <p className="text-[11px] text-muted-foreground text-center">
+                    $0 due today · You won't be charged for {product.free_trial?.length} days
+                  </p>
+                )}
               </CardFooter>
             </Card>
           )
