@@ -8,13 +8,12 @@ export type TimeRange =
   | { type: "relative"; value: string }
   | { type: "absolute"; startTime: string; endTime: string }
 
-// --- Dashboard Variables ---
+// --- Data Source Endpoints ---
 
 export type DataSourceEndpoint =
   | "service_usage"
   | "service_overview"
   | "service_overview_time_series"
-  | "service_detail_time_series"
   | "service_apdex_time_series"
   | "services_facets"
   | "list_traces"
@@ -37,23 +36,6 @@ export type DataSourceEndpoint =
   | "custom_timeseries"
   | "custom_breakdown"
   | "custom_query_builder_timeseries"
-
-export interface DashboardVariable {
-  id: string
-  label: string
-  source:
-    | { type: "static"; values: string[] }
-    | {
-        type: "query"
-        endpoint: DataSourceEndpoint
-        valueField: string
-        labelField?: string
-        params?: Record<string, unknown>
-      }
-  defaultValue?: string | string[]
-  multi?: boolean
-  includeAll?: boolean
-}
 
 // --- Widget Data Source ---
 
@@ -101,9 +83,6 @@ export interface WidgetDisplayConfig {
     legend?: "visible" | "hidden"
     tooltip?: "visible" | "hidden"
   }
-  // Deprecated legacy fields kept for backward compatibility.
-  showLegend?: boolean
-  showTooltip?: boolean
   xAxis?: { label?: string; unit?: ValueUnit; visible?: boolean }
   yAxis?: {
     label?: string
@@ -163,7 +142,6 @@ export interface DashboardWidget {
   dataSource: WidgetDataSource
   display: WidgetDisplayConfig
   layout: WidgetLayout
-  timeRangeOverride?: TimeRange
 }
 
 // --- Dashboard ---
@@ -174,7 +152,6 @@ export interface Dashboard {
   description?: string
   tags?: string[]
   timeRange: TimeRange
-  variables?: DashboardVariable[]
   widgets: DashboardWidget[]
   createdAt: string
   updatedAt: string

@@ -4,7 +4,6 @@ import { Exit } from "effect"
 import { MapleApiAtomClient } from "@/lib/services/common/atom-client"
 import type {
   Dashboard,
-  DashboardVariable,
   DashboardWidget,
   TimeRange,
   VisualizationType,
@@ -227,17 +226,6 @@ export function useDashboardStore() {
     [mutateDashboard],
   )
 
-  const updateDashboardVariables = useCallback(
-    (id: string, variables: DashboardVariable[]) => {
-      mutateDashboard(id, (dashboard) => ({
-        ...dashboard,
-        variables,
-        updatedAt: new Date().toISOString(),
-      }))
-    },
-    [mutateDashboard],
-  )
-
   const addWidget = useCallback(
     (
       dashboardId: string,
@@ -289,19 +277,6 @@ export function useDashboardStore() {
       mutateDashboard(dashboardId, (dashboard) => ({
         ...dashboard,
         widgets: dashboard.widgets.filter((widget) => widget.id !== widgetId),
-        updatedAt: new Date().toISOString(),
-      }))
-    },
-    [mutateDashboard],
-  )
-
-  const updateWidgetDataSource = useCallback(
-    (dashboardId: string, widgetId: string, dataSource: WidgetDataSource) => {
-      mutateDashboard(dashboardId, (dashboard) => ({
-        ...dashboard,
-        widgets: dashboard.widgets.map((widget) =>
-          widget.id === widgetId ? { ...widget, dataSource } : widget,
-        ),
         updatedAt: new Date().toISOString(),
       }))
     },
@@ -362,7 +337,7 @@ export function useDashboardStore() {
       updates: Partial<
         Pick<
           DashboardWidget,
-          "visualization" | "dataSource" | "display" | "layout" | "timeRangeOverride"
+          "visualization" | "dataSource" | "display" | "layout"
         >
       >,
     ) => {
@@ -427,10 +402,8 @@ export function useDashboardStore() {
     updateDashboard,
     deleteDashboard,
     updateDashboardTimeRange,
-    updateDashboardVariables,
     addWidget,
     removeWidget,
-    updateWidgetDataSource,
     updateWidgetDisplay,
     updateWidgetLayouts,
     updateWidget,

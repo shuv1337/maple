@@ -11,7 +11,6 @@ import { WidgetQueryBuilderPage } from "@/components/dashboard-builder/config/wi
 import { InlineEditableTitle } from "@/components/dashboard-builder/inline-editable-title"
 import {
   DashboardTimeRangeProvider,
-  DashboardVariablesProvider,
 } from "@/components/dashboard-builder/dashboard-providers"
 import type {
   VisualizationType,
@@ -148,29 +147,25 @@ function DashboardsPage() {
             updateDashboardTimeRange(activeDashboard.id, timeRange)
           }
         >
-          <DashboardVariablesProvider
-            variables={activeDashboard.variables ?? []}
+          <DashboardLayout
+            breadcrumbs={[
+              { label: "Dashboards", href: "/dashboards" },
+              {
+                label: activeDashboard.name,
+                href: `/dashboards?dashboardId=${activeDashboard.id}`,
+              },
+              { label: "Configure Widget" },
+            ]}
           >
-            <DashboardLayout
-              breadcrumbs={[
-                { label: "Dashboards", href: "/dashboards" },
-                {
-                  label: activeDashboard.name,
-                  href: `/dashboards?dashboardId=${activeDashboard.id}`,
-                },
-                { label: "Configure Widget" },
-              ]}
-            >
-              <WidgetQueryBuilderPage
-                widget={configureWidget}
-                onApply={(updates) => {
-                  handleApplyWidgetConfig(configureWidget.id, updates)
-                  handleCloseBuilder()
-                }}
-                onCancel={handleCloseBuilder}
-              />
-            </DashboardLayout>
-          </DashboardVariablesProvider>
+            <WidgetQueryBuilderPage
+              widget={configureWidget}
+              onApply={(updates) => {
+                handleApplyWidgetConfig(configureWidget.id, updates)
+                handleCloseBuilder()
+              }}
+              onCancel={handleCloseBuilder}
+            />
+          </DashboardLayout>
         </DashboardTimeRangeProvider>
       )
     }
@@ -182,74 +177,70 @@ function DashboardsPage() {
           updateDashboardTimeRange(activeDashboard.id, timeRange)
         }
       >
-        <DashboardVariablesProvider
-          variables={activeDashboard.variables ?? []}
-        >
-          <DashboardLayout
-            breadcrumbs={[
-              { label: "Dashboards", href: "/dashboards" },
-              { label: activeDashboard.name },
-            ]}
-            titleContent={
-              <InlineEditableTitle
-                value={activeDashboard.name}
-                readOnly={readOnly}
-                onChange={(name) =>
-                  updateDashboard(activeDashboardId!, { name })
-                }
-              />
-            }
-            description="Custom dashboard"
-            headerActions={
-              <DashboardToolbar
-                mode={effectiveMode}
-                readOnly={readOnly}
-                onToggleEdit={() =>
-                  setMode((current) => (current === "edit" ? "view" : "edit"))
-                }
-                onAddWidget={() => setChartPickerOpen(true)}
-                onAutoLayout={handleAutoLayout}
-              />
-            }
-          >
-            {persistenceError && (
-              <div className="mb-4 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive">
-                {persistenceError}. Dashboard editing is temporarily disabled.
-              </div>
-            )}
-            {activeDashboard.widgets.length === 0 && effectiveMode === "view" ? (
-              <div className="flex flex-col items-center justify-center py-20 text-muted-foreground gap-2">
-                <p className="text-sm">This dashboard is empty.</p>
-                <button
-                  type="button"
-                  disabled={readOnly}
-                  className="text-xs text-primary hover:underline"
-                  onClick={() => {
-                    setMode("edit")
-                    setChartPickerOpen(true)
-                  }}
-                >
-                  Add your first widget
-                </button>
-              </div>
-            ) : (
-              <DashboardCanvas
-                widgets={activeDashboard.widgets}
-                mode={effectiveMode}
-                onLayoutChange={handleLayoutChange}
-                onRemoveWidget={handleRemoveWidget}
-                onUpdateWidgetDisplay={handleUpdateWidgetDisplay}
-                onConfigureWidget={readOnly ? undefined : handleConfigureWidget}
-              />
-            )}
-
-            <WidgetPicker
-              open={readOnly ? false : chartPickerOpen}
-              onOpenChange={readOnly ? () => undefined : setChartPickerOpen}
-              onSelect={handleAddWidget}
+        <DashboardLayout
+          breadcrumbs={[
+            { label: "Dashboards", href: "/dashboards" },
+            { label: activeDashboard.name },
+          ]}
+          titleContent={
+            <InlineEditableTitle
+              value={activeDashboard.name}
+              readOnly={readOnly}
+              onChange={(name) =>
+                updateDashboard(activeDashboardId!, { name })
+              }
             />
-          </DashboardLayout>
-        </DashboardVariablesProvider>
+          }
+          description="Custom dashboard"
+          headerActions={
+            <DashboardToolbar
+              mode={effectiveMode}
+              readOnly={readOnly}
+              onToggleEdit={() =>
+                setMode((current) => (current === "edit" ? "view" : "edit"))
+              }
+              onAddWidget={() => setChartPickerOpen(true)}
+              onAutoLayout={handleAutoLayout}
+            />
+          }
+        >
+          {persistenceError && (
+            <div className="mb-4 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive">
+              {persistenceError}. Dashboard editing is temporarily disabled.
+            </div>
+          )}
+          {activeDashboard.widgets.length === 0 && effectiveMode === "view" ? (
+            <div className="flex flex-col items-center justify-center py-20 text-muted-foreground gap-2">
+              <p className="text-sm">This dashboard is empty.</p>
+              <button
+                type="button"
+                disabled={readOnly}
+                className="text-xs text-primary hover:underline"
+                onClick={() => {
+                  setMode("edit")
+                  setChartPickerOpen(true)
+                }}
+              >
+                Add your first widget
+              </button>
+            </div>
+          ) : (
+            <DashboardCanvas
+              widgets={activeDashboard.widgets}
+              mode={effectiveMode}
+              onLayoutChange={handleLayoutChange}
+              onRemoveWidget={handleRemoveWidget}
+              onUpdateWidgetDisplay={handleUpdateWidgetDisplay}
+              onConfigureWidget={readOnly ? undefined : handleConfigureWidget}
+            />
+          )}
+
+          <WidgetPicker
+            open={readOnly ? false : chartPickerOpen}
+            onOpenChange={readOnly ? () => undefined : setChartPickerOpen}
+            onSelect={handleAddWidget}
+          />
+        </DashboardLayout>
       </DashboardTimeRangeProvider>
     )
   }

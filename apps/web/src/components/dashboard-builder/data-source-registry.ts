@@ -20,7 +20,6 @@ import { listMetrics, getMetricTimeSeries, getMetricsSummary } from "@/api/tinyb
 import {
   getCustomChartTimeSeries,
   getCustomChartBreakdown,
-  getCustomChartServiceDetail,
   getCustomChartServiceSparklines,
 } from "@/api/tinybird/custom-charts"
 import { getQueryBuilderTimeseries } from "@/api/tinybird/query-builder-timeseries"
@@ -32,7 +31,6 @@ export const serverFunctionMap: Record<DataSourceEndpoint, ServerFunction> = {
   service_usage: getServiceUsage,
   service_overview: getServiceOverview,
   service_overview_time_series: getCustomChartServiceSparklines,
-  service_detail_time_series: getCustomChartServiceDetail,
   service_apdex_time_series: getServiceApdexTimeSeries,
   services_facets: getServicesFacets,
   list_traces: listTraces,

@@ -85,12 +85,6 @@ export function WidgetShell({
   )
 }
 
-type ExplicitWidgetShellProps = Omit<WidgetShellProps, "mode">
-
-export function EditableWidgetShell(props: ExplicitWidgetShellProps) {
-  return <WidgetShell {...props} mode="edit" />
-}
-
-export function ReadonlyWidgetShell(props: ExplicitWidgetShellProps) {
+export function ReadonlyWidgetShell(props: Omit<WidgetShellProps, "mode">) {
   return <WidgetShell {...props} mode="view" />
 }

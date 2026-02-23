@@ -35,12 +35,8 @@ export const ChartWidget = memo(function ChartWidget({
     dataState.status === "ready" && Array.isArray(dataState.data)
       ? dataState.data
       : undefined
-  const legend =
-    display.chartPresentation?.legend ??
-    (display.showLegend ? "visible" : undefined)
-  const tooltip =
-    display.chartPresentation?.tooltip ??
-    (display.showTooltip === false ? "hidden" : undefined)
+  const legend = display.chartPresentation?.legend
+  const tooltip = display.chartPresentation?.tooltip
 
   return (
     <WidgetShell

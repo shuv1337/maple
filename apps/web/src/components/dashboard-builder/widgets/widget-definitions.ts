@@ -169,33 +169,3 @@ export const tablePresets: WidgetPresetDefinition[] = [
   },
 ]
 
-export const chartPresets: WidgetPresetDefinition[] = [
-  {
-    id: "chart-custom-timeseries",
-    name: "Custom Time Series",
-    description: "Flexible time series from traces, logs, or metrics",
-    visualization: "chart",
-    dataSource: {
-      endpoint: "custom_timeseries",
-      params: {
-        source: "traces",
-        metric: "count",
-        groupBy: "service",
-      },
-    },
-    display: {
-      title: "Time Series",
-      chartId: "gradient-area",
-    },
-  },
-]
-
-export const allPresets: WidgetPresetDefinition[] = [
-  ...statPresets,
-  ...tablePresets,
-  ...chartPresets,
-]
-
-export function getPresetById(id: string): WidgetPresetDefinition | undefined {
-  return allPresets.find((p) => p.id === id)
-}

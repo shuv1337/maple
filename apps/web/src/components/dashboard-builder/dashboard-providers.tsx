@@ -6,7 +6,7 @@ import {
   useMemo,
   type ReactNode,
 } from "react"
-import type { TimeRange, DashboardVariable } from "@/components/dashboard-builder/types"
+import type { TimeRange } from "@/components/dashboard-builder/types"
 
 // ---------------------------------------------------------------------------
 // Time Range Context
@@ -68,86 +68,5 @@ export function DashboardTimeRangeProvider({
     <DashboardTimeRangeContext.Provider value={value}>
       {children}
     </DashboardTimeRangeContext.Provider>
-  )
-}
-
-// ---------------------------------------------------------------------------
-// Variables Context
-// ---------------------------------------------------------------------------
-
-interface DashboardVariablesContextValue {
-  state: {
-    definitions: DashboardVariable[]
-    values: Map<string, string | string[]>
-  }
-  actions: {
-    setVariable: (id: string, value: string | string[]) => void
-  }
-  meta: {}
-}
-
-const DashboardVariablesContext = createContext<DashboardVariablesContextValue | null>(null)
-
-export function useDashboardVariables() {
-  const context = use(DashboardVariablesContext)
-  if (!context) {
-    throw new Error(
-      "useDashboardVariables must be used within DashboardVariablesProvider."
-    )
-  }
-  return context
-}
-
-interface DashboardVariablesProviderProps {
-  variables: DashboardVariable[]
-  onVariablesChange?: (values: Map<string, string | string[]>) => void
-  children: ReactNode
-}
-
-export function DashboardVariablesProvider({
-  variables,
-  onVariablesChange,
-  children,
-}: DashboardVariablesProviderProps) {
-  const [values, setValues] = useState<Map<string, string | string[]>>(() => {
-    const initial = new Map<string, string | string[]>()
-    for (const v of variables) {
-      if (v.defaultValue !== undefined) {
-        initial.set(v.id, v.defaultValue)
-      }
-    }
-    return initial
-  })
-
-  const setVariable = useCallback(
-    (id: string, value: string | string[]) => {
-      setValues((prev) => {
-        const next = new Map(prev)
-        next.set(id, value)
-        onVariablesChange?.(next)
-        return next
-      })
-    },
-    [onVariablesChange]
-  )
-
-  const contextValue = useMemo<DashboardVariablesContextValue>(
-    () => ({
-      state: {
-        definitions: variables,
-        values,
-      },
-      actions: {
-        setVariable,
-      },
-      meta: {},
-    }),
-    [variables, values, setVariable]
-  )
-
-  return (
-    <DashboardVariablesContext.Provider value={contextValue}>
-      {children}
-    </DashboardVariablesContext.Provider>
   )
 }

@@ -2,7 +2,6 @@ import { useMemo } from "react"
 import { Atom, Result, useAtomValue } from "@effect-atom/atom-react"
 import { Effect, Schedule, Schema } from "effect"
 import { useDashboardTimeRange } from "@/components/dashboard-builder/dashboard-providers"
-import { useDashboardVariables } from "@/components/dashboard-builder/dashboard-providers"
 import { serverFunctionMap } from "@/components/dashboard-builder/data-source-registry"
 import type { DashboardWidget, WidgetDataSource } from "@/components/dashboard-builder/types"
 import { relativeToAbsolute } from "@/lib/time-utils"
@@ -22,25 +21,18 @@ function resolveTimeRange(timeRange: TimeRange): {
 
 function interpolateParams(
   params: Record<string, unknown>,
-  variables: Map<string, string | string[]>,
   resolvedTime: { startTime: string; endTime: string }
 ): Record<string, unknown> {
   const result: Record<string, unknown> = {}
 
   for (const [key, value] of Object.entries(params)) {
-    if (typeof value === "string" && value.startsWith("$")) {
-      const varName = value.slice(1)
-
-      if (varName === "__startTime") {
+    if (typeof value === "string") {
+      if (value === "$__startTime") {
         result[key] = resolvedTime.startTime
-      } else if (varName === "__endTime") {
+      } else if (value === "$__endTime") {
         result[key] = resolvedTime.endTime
       } else {
-        const varValue = variables.get(varName)
-        // If includeAll is active and value is undefined, skip the param (no filter)
-        if (varValue !== undefined) {
-          result[key] = varValue
-        }
+        result[key] = value
       }
     } else {
       result[key] = value
@@ -270,11 +262,8 @@ const widgetDataResultAtom = (input: {
 
 export function useWidgetData(widget: DashboardWidget) {
   const dashboardTimeRange = useDashboardTimeRange()
-  const variables = useDashboardVariables()
 
-  const effectiveTimeRange =
-    widget.timeRangeOverride ?? dashboardTimeRange.state.timeRange
-  const resolvedTime = resolveTimeRange(effectiveTimeRange)
+  const resolvedTime = resolveTimeRange(dashboardTimeRange.state.timeRange)
 
   const hasServerFn = !!serverFunctionMap[widget.dataSource.endpoint]
 
@@ -285,7 +274,6 @@ export function useWidgetData(widget: DashboardWidget) {
           endTime: resolvedTime.endTime,
           ...widget.dataSource.params,
         },
-        variables.state.values,
         resolvedTime
       )
     : {}
