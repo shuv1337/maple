@@ -25,6 +25,7 @@ use flate2::Compression;
 use hmac::{Hmac, Mac};
 use libsql::{params, Builder, Connection, Database};
 use metrics::{counter, gauge, histogram};
+use moka::future::Cache;
 use opentelemetry_proto::tonic::collector::logs::v1::ExportLogsServiceRequest;
 use opentelemetry_proto::tonic::collector::metrics::v1::ExportMetricsServiceRequest;
 use opentelemetry_proto::tonic::collector::trace::v1::ExportTraceServiceRequest;
@@ -156,6 +157,7 @@ impl AppConfig {
 struct IngestKeyResolver {
     conn: Connection,
     lookup_hmac_key: String,
+    cache: Cache<String, ResolvedIngestKey>,
 }
 
 struct AppState {
@@ -325,10 +327,16 @@ async fn main() {
 
     let conn = database.connect().expect("Failed to create database connection");
 
+    let ingest_key_cache = Cache::builder()
+        .time_to_live(Duration::from_secs(60))
+        .max_capacity(1_000)
+        .build();
+
     let state = Arc::new(AppState {
         resolver: IngestKeyResolver {
             conn,
             lookup_hmac_key: config.lookup_hmac_key.clone(),
+            cache: ingest_key_cache,
         },
         http_client,
         config: config.clone(),
@@ -914,6 +922,10 @@ async fn forward_to_collector(
 
 impl IngestKeyResolver {
     async fn resolve_ingest_key(&self, raw_key: &str) -> Result<Option<ResolvedIngestKey>, String> {
+        if let Some(cached) = self.cache.get(raw_key).await {
+            return Ok(Some(cached));
+        }
+
         let key_type = infer_ingest_key_type(raw_key);
         let Some(key_type) = key_type else {
             return Ok(None);
@@ -940,11 +952,15 @@ impl IngestKeyResolver {
 
         let org_id: String = row.get(0).map_err(|error| error.to_string())?;
 
-        Ok(Some(ResolvedIngestKey {
+        let resolved = ResolvedIngestKey {
             org_id,
             key_type,
             key_id: key_hash.chars().take(16).collect(),
-        }))
+        };
+
+        self.cache.insert(raw_key.to_string(), resolved.clone()).await;
+
+        Ok(Some(resolved))
     }
 }
 
