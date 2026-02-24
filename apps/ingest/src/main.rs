@@ -1,3 +1,6 @@
+#[global_allocator]
+static GLOBAL: tikv_jemallocator::Jemalloc = tikv_jemallocator::Jemalloc;
+
 mod autumn;
 
 use std::io::{Read, Write};
@@ -20,7 +23,7 @@ use flate2::read::GzDecoder;
 use flate2::write::GzEncoder;
 use flate2::Compression;
 use hmac::{Hmac, Mac};
-use libsql::{params, Builder, Database};
+use libsql::{params, Builder, Connection, Database};
 use metrics::{counter, gauge, histogram};
 use opentelemetry_proto::tonic::collector::logs::v1::ExportLogsServiceRequest;
 use opentelemetry_proto::tonic::collector::metrics::v1::ExportMetricsServiceRequest;
@@ -150,9 +153,8 @@ impl AppConfig {
     }
 }
 
-#[derive(Clone)]
 struct IngestKeyResolver {
-    db: Arc<Database>,
+    conn: Connection,
     lookup_hmac_key: String,
 }
 
@@ -300,7 +302,12 @@ async fn main() {
         }
     };
 
-    let http_client = match Client::builder().timeout(config.forward_timeout).build() {
+    let http_client = match Client::builder()
+        .timeout(config.forward_timeout)
+        .pool_max_idle_per_host(5)
+        .pool_idle_timeout(Duration::from_secs(30))
+        .build()
+    {
         Ok(client) => client,
         Err(error) => {
             eprintln!("HTTP client init error: {error}");
@@ -316,9 +323,11 @@ async fn main() {
         )
     });
 
+    let conn = database.connect().expect("Failed to create database connection");
+
     let state = Arc::new(AppState {
         resolver: IngestKeyResolver {
-            db: Arc::new(database),
+            conn,
             lookup_hmac_key: config.lookup_hmac_key.clone(),
         },
         http_client,
@@ -920,8 +929,7 @@ impl IngestKeyResolver {
             "SELECT org_id FROM org_ingest_keys WHERE {hash_column} = ? LIMIT 1"
         );
 
-        let conn = self.db.connect().map_err(|error| error.to_string())?;
-        let mut rows = conn
+        let mut rows = self.conn
             .query(&query, params![key_hash.clone()])
             .await
             .map_err(|error| error.to_string())?;
