@@ -286,10 +286,9 @@ function PlanBadge() {
   )
 }
 
-export function AppSidebar() {
+function AppSidebarCore({ orgId }: { orgId?: string | null }) {
   const routerState = useRouterState()
   const currentPath = routerState.location.pathname
-  const { orgId } = useAuth()
   const { isDismissed, isComplete, progressPercent } = useQuickStart(orgId)
 
   return (
@@ -420,4 +419,13 @@ export function AppSidebar() {
       </SidebarFooter>
     </Sidebar>
   )
+}
+
+function ClerkAppSidebar() {
+  const { orgId } = useAuth()
+  return <AppSidebarCore orgId={orgId} />
+}
+
+export function AppSidebar() {
+  return isClerkAuthEnabled ? <ClerkAppSidebar /> : <AppSidebarCore />
 }
